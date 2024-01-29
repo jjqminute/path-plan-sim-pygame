@@ -1,5 +1,5 @@
-# 姓名：jujianqiang
-# 2023/12/8 11:40
+# 姓名：高翔
+# 2024/1/29 11:40
 from arithmetic.Astar.Node import Node
 
 
