@@ -10,6 +10,8 @@ class Ui_MainWindow(object):
     windows = []  # 存储所有创建的窗口实例
 
     def setupUi(self, MainWindow, grid_widget):
+        self.map = grid_widget.map
+        self.obs = grid_widget.obstacles
         self.loginWindow_new = None
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(1006, 850)
@@ -299,7 +301,8 @@ class Ui_MainWindow(object):
     # 路径规划
     def startPath(self):
         # 根据不同的算法
-        if self.checkBox.isChecked():
+        if self.combo_arithmetic.currentText()=="Astar":
+            print("启动A星算法！！！")
             self.grid_widget.startPath()
 
     def ori_end_input(self):  # 输入起始点终点函数

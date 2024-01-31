@@ -8,7 +8,7 @@ import math
 
 
 class Map(object):
-    def __init__(self, mapdata, startx, starty, endx, endy):
+    def __init__(self, mapdata, startx, starty, endx, endy,surface):
         self.data = mapdata
         self.startx = startx
         self.starty = starty
