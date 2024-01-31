@@ -6,6 +6,7 @@ from GridWidget import GridWidget
 from MapPygame import PygameWidget
 
 
+
 class Ui_MainWindow(object):
     windows = []  # 存储所有创建的窗口实例
 
@@ -48,7 +49,10 @@ class Ui_MainWindow(object):
         # self.pushButton.setGeometry(QtCore.QRect(40, 450, 75, 23))
         self.pushButton_new.setGeometry(QtCore.QRect(40, 425, 75, 25))
         self.pushButton_new.setObjectName("pushButton_new")
-        self.pushButton_new.clicked.connect(self.startPath)
+        # self.pushButton_new.clicked.connect(self.startPath)
+        self.grid_widget = grid_widget
+        self.pushButton_new.clicked.connect(self.grid_widget.get_obs_vertices)
+
         # 清除起始点按钮
         self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_3.setGeometry(QtCore.QRect(220, 425, 75, 25))
@@ -204,7 +208,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
-        self.grid_widget = grid_widget
+        # self.grid_widget = grid_widget
 
     # 文本框输出提示信息
     def printf(self, msg, x, y):

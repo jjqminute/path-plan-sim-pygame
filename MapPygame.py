@@ -6,9 +6,24 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QColor
 from PyQt5.QtCore import QTimer
 import random
+import cv2 as cv
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
+
+
+def surface_to_cv_bgr(surface):
+    capture = pygame.surfarray.pixels3d(surface)
+    capture = capture.transpose([1, 0, 2])
+    capture_bgr = cv.cvtColor(capture, cv.COLOR_RGB2BGR)
+    return capture_bgr
+
+
+def cv_bgr_to_surface(img_bgr):
+    img_rgb = cv.cvtColor(img_bgr, cv.COLOR_BGR2RGB)
+    img_rgb = img_rgb.transpose([1, 0, 2])
+    surface = pygame.surfarray.make_surface(img_rgb)
+    return surface
 
 
 class PygameWidget(QWidget):
@@ -125,9 +140,12 @@ class PygameWidget(QWidget):
         # if self.end_point:
         #     pygame.draw.rect(screen, (255, 0, 0),
         #                      (self.end_point[0], self.end_point[1], self.cell_size, self.cell_size), 0)
-        #
+
         # 将pygame surface转换为QImage
-        image = QImage(self.surface.get_buffer(), self.width, self.height, QImage.Format_RGB32)
+        buffer = self.surface.get_buffer()
+        img_data = buffer.raw
+        del buffer
+        image = QImage(img_data, self.width, self.height, QImage.Format_RGB32)
 
         # 将QImage转换为QPixmap
         pixmap = QPixmap.fromImage(image)
@@ -296,6 +314,17 @@ class PygameWidget(QWidget):
         self.end_point = None  # 清除终点
         self.win_main.printf("已经清空起始点", None, None)
         self.update()  # 更新界面
+
+    def get_obs_vertices(self):
+        capture_bgr = surface_to_cv_bgr(self.obs_surface)
+        capture_gray = cv.cvtColor(capture_bgr, cv.COLOR_BGR2GRAY)
+        _, binary = cv.threshold(capture_gray, 0, 255, cv.THRESH_BINARY_INV)
+        # cv.imshow('bi', binary)
+        contours, hierarchy = cv.findContours(binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+        cv.drawContours(capture_bgr, contours, -1, (0, 0, 255), 2)
+        self.obs_surface = cv_bgr_to_surface(capture_bgr)
+        # cv.imshow('contours', capture_bgr)
+        # print(contours)
 
 
 class MainWindow(QMainWindow):
