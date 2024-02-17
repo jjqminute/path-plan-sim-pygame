@@ -6,6 +6,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QPixmap, QPainter
 from PyQt5.QtCore import QTimer
 
+
 class PygameWidget(QWidget):
     def __init__(self, parent=None):
         super(PygameWidget, self).__init__(parent)
@@ -59,6 +60,7 @@ class PygameWidget(QWidget):
         painter.drawPixmap(0, 0, pixmap)
         painter.end()
 
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -77,6 +79,7 @@ class MainWindow(QMainWindow):
         main_widget = QWidget()
         main_widget.setLayout(layout)
         self.setCentralWidget(main_widget)
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

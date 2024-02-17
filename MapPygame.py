@@ -6,30 +6,55 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QColor
 from PyQt5.QtCore import QTimer
 import random
-import cv2 as cv
+import cv2
+import numpy
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
 
-def surface_to_cv_bgr(surface):
-    capture = pygame.surfarray.pixels3d(surface)
-    capture = capture.transpose([1, 0, 2])
-    capture_bgr = cv.cvtColor(capture, cv.COLOR_RGB2BGR)
-    return capture_bgr
+def surface_to_cv_bgr(surface: pygame.Surface) -> cv2.typing.MatLike:
+    """
+    Converts pygame surface pixel data into opencv BGR format Mat
+    """
+
+    surface_string = pygame.image.tostring(surface, 'RGB')
+
+    # convert from (width, height, channel) to (height, width, channel)
+    size = surface.get_size()
+    array = numpy.frombuffer(surface_string, dtype=numpy.uint8).reshape((size[1], size[0], 3))
+
+    img_bgr = cv2.cvtColor(array, cv2.COLOR_RGB2BGR)
+
+    return img_bgr
 
 
-def cv_bgr_to_surface(img_bgr):
-    img_rgb = cv.cvtColor(img_bgr, cv.COLOR_BGR2RGB)
-    img_rgb = img_rgb.transpose([1, 0, 2])
-    surface = pygame.surfarray.make_surface(img_rgb)
+def cv_bgr_to_surface(img_bgr: cv2.typing.MatLike) -> pygame.Surface:
+    """
+    Converts pygame surface pixel data into opencv BGR format Mat
+    """
+    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    height, width = img_rgb.shape[:2]
+    surface = pygame.image.frombuffer(img_rgb.tobytes(), (width, height), 'RGB')
+
     return surface
+
+
+def draw_line(surface, color, start_pos, end_pos, radius):
+    dx = end_pos[0] - start_pos[0]
+    dy = end_pos[1] - start_pos[1]
+    distance = max(abs(dx), abs(dy))
+
+    for i in range(distance):
+        x = int(start_pos[0] + float(i) / distance * dx)
+        y = int(start_pos[1] + float(i) / distance * dy)
+        pygame.draw.circle(surface, color, (x, y), radius)
 
 
 class PygameWidget(QWidget):
     BACK_COLOR = WHITE
     OBS_COLOR = BLACK
-    OBS_RADIUS = 10
+    OBS_RADIUS = 5
     WIDTH = 920
     HEIGHT = 390
 
@@ -43,16 +68,24 @@ class PygameWidget(QWidget):
         self.width, self.height = PygameWidget.WIDTH, PygameWidget.HEIGHT
         self.setMinimumSize(self.width, self.height)
 
+        # 设置背景颜色
+        self.back_color = PygameWidget.BACK_COLOR
+        # 设置障碍物颜色
+        self.obs_color = PygameWidget.OBS_COLOR
+
+        # 设置障碍物画笔半径
+        self.obs_radius = PygameWidget.OBS_RADIUS
+
         # 设置主平面，障碍物平面和路径规划平面
         self.surface = pygame.Surface((self.width, self.height))
         self.obs_surface = pygame.Surface((self.width, self.height))
         self.plan_surface = pygame.Surface((self.width, self.height))
 
         # 设置障碍物平面和路径规划平面的透明色
-        self.obs_surface.set_colorkey(self.BACK_COLOR)
-        self.plan_surface.set_colorkey(self.BACK_COLOR)
-        self.obs_surface.fill(self.BACK_COLOR)
-        self.plan_surface.fill(self.BACK_COLOR)
+        self.obs_surface.set_colorkey(self.back_color)
+        self.plan_surface.set_colorkey(self.back_color)
+        self.obs_surface.fill(self.back_color)
+        self.plan_surface.fill(self.back_color)
 
         # 障碍物以及起始点大小
         self.cell_size = 10
@@ -79,17 +112,37 @@ class PygameWidget(QWidget):
         self.timer.start(1000 // 60)  # 设置帧率为60
         self.win_main = main_window
 
-    # 鼠标点击事件处理
-    def mouseMoveEvent(self, event):
-        x = event.pos().x()
-        y = event.pos().y()
+        self.drawing = False
+        self.last_pos = None
 
-        # print(event.buttons() == Qt.LeftButton)
-        if event.buttons() == Qt.LeftButton:
-            pygame.draw.circle(self.obs_surface, self.OBS_COLOR, (x, y), self.OBS_RADIUS)
-        # if event.button == Qt.LeftButton:  # 鼠标左键
+    # 鼠标点击事件处理
+    def mousePressEvent(self, event):
+
+        if event.button() == Qt.LeftButton:
+            self.drawing = True
+            pos = (event.pos().x(), event.pos().y())
+            self.last_pos = pos
+            pygame.draw.circle(self.obs_surface, self.obs_color, pos, self.obs_radius)
+            # print((x, y))
+
+    # 鼠标移动事件处理
+    def mouseMoveEvent(self, event):
+
+        if self.drawing:
+            current_pos = (event.pos().x(), event.pos().y())
+            if self.last_pos:
+                draw_line(self.obs_surface, self.obs_color, self.last_pos, current_pos, self.obs_radius)
+            self.last_pos = current_pos
+        # x = event.pos().x()
+        # y = event.pos().y()
         #
-        #     pygame.draw.circle(self.obs_surface, self.OBS_COLOR, (x, y), self.OBS_RADIUS)
+        # if event.buttons() == Qt.LeftButton:
+        #     pygame.draw.circle(self.obs_surface, self.obs_color, (x, y), self.obs_radius)
+        #     # print((x, y))
+
+        # if event.button() == Qt.LeftButton:  # 鼠标左键
+        #
+        #     pygame.draw.circle(self.obs_surface, self.obs_color, (x, y), self.obs_radius)
         #     if (x, y) != self.start_point and (x, y) != self.end_point:
         #         # 将鼠标点击的位置对齐到网格上
         #         x = (x // self.cell_size) * self.cell_size
@@ -122,6 +175,11 @@ class PygameWidget(QWidget):
         #                 print(self.end_point)
         #                 self.win_main.printf("设置终点", x // self.cell_size, y // self.cell_size)
 
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.drawing = False
+            self.last_pos = None
+
     # 绘制pygame界面
     def paintEvent(self, event):
 
@@ -142,10 +200,9 @@ class PygameWidget(QWidget):
         #                      (self.end_point[0], self.end_point[1], self.cell_size, self.cell_size), 0)
 
         # 将pygame surface转换为QImage
-        buffer = self.surface.get_buffer()
-        img_data = buffer.raw
-        del buffer
-        image = QImage(img_data, self.width, self.height, QImage.Format_RGB32)
+        surface_string = pygame.image.tostring(self.surface, 'RGB')
+        # width, height = self.surface.get_size()
+        image = QImage(surface_string, self.width, self.height, QImage.Format_RGB888)
 
         # 将QImage转换为QPixmap
         pixmap = QPixmap.fromImage(image)
@@ -317,14 +374,23 @@ class PygameWidget(QWidget):
 
     def get_obs_vertices(self):
         capture_bgr = surface_to_cv_bgr(self.obs_surface)
-        capture_gray = cv.cvtColor(capture_bgr, cv.COLOR_BGR2GRAY)
-        _, binary = cv.threshold(capture_gray, 0, 255, cv.THRESH_BINARY_INV)
-        # cv.imshow('bi', binary)
-        contours, hierarchy = cv.findContours(binary, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-        cv.drawContours(capture_bgr, contours, -1, (0, 0, 255), 2)
-        self.obs_surface = cv_bgr_to_surface(capture_bgr)
-        # cv.imshow('contours', capture_bgr)
+        capture_gray = cv2.cvtColor(capture_bgr, cv2.COLOR_BGR2GRAY)
+        _, binary = cv2.threshold(capture_gray, 254, 255, cv2.THRESH_BINARY_INV)
+        contours, hierarchy = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        for obs in contours:
+            obs = obs.reshape(-1, 2).tolist()
+            pygame.draw.polygon(self.obs_surface, (255, 0, 0), obs)
+
+        # cv2.drawContours(capture_bgr, contours, -1, (0, 0, 255), 2)
+        # self.obs_surface = cv_bgr_to_surface(capture_bgr)
+        # self.obs_surface.set_colorkey(WHITE)
+        # cv2.imshow('contours', capture_bgr)
+        # print(contours[0].reshape(-1, 2).tolist())
         # print(contours)
+        # print(hierarchy)
+
+        return contours
 
 
 class MainWindow(QMainWindow):

@@ -6,7 +6,6 @@ from GridWidget import GridWidget
 from MapPygame import PygameWidget
 
 
-
 class Ui_MainWindow(object):
     windows = []  # 存储所有创建的窗口实例
 
@@ -96,7 +95,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.toolBar = QtWidgets.QToolBar(MainWindow)
         self.toolBar.setObjectName("toolBar")
-        MainWindow.addToolBar(QtCore.Qt.TopToolBarArea, self.toolBar)
+        MainWindow.addToolBar(QtCore.Qt.ToolBarArea.TopToolBarArea, self.toolBar)
         self.actionLoadTest = QtWidgets.QAction(MainWindow)
         self.actionLoadTest.setObjectName("actionLoadTest")
         self.actionExit = QtWidgets.QAction(MainWindow)
