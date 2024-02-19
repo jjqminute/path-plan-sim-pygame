@@ -53,9 +53,10 @@ class Ui_MainWindow(object):
         self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_3.setGeometry(QtCore.QRect(220, 425, 75, 25))
         self.pushButton_3.setObjectName("pushButton_3")
+        # self.pushButton_3.clicked.connect(self.clearStartAndEnd)
         # 清除起始点方法链接
 
-        self.pushButton_3.clicked.connect(grid_widget.clearStartAndEnd)
+        # self.pushButton_3.clicked.connect(grid_widget.clearStartAndEnd)
 
         # 清楚所有障碍方法链接
         self.pushButton.clicked.connect(grid_widget.clear_map)
@@ -128,10 +129,10 @@ class Ui_MainWindow(object):
         self.btn_default.setGeometry(QtCore.QRect(230, 455, 75, 23))
         self.btn_default.setObjectName("btn_default")
         # 恢复地图默认粒度
-        self.btn_default.clicked.connect(grid_widget.defaultMap)
+        # self.btn_default.clicked.connect(grid_widget.defaultMap)
 
         # 打开地图的方法
-        # self.actionOpen.triggered.connect(grid_widget.openMap)
+        self.actionOpen.triggered.connect(grid_widget.openMap)
 
         # 输入起始点确认按钮
         self.pushButton_4 = QtWidgets.QPushButton(self.centralwidget)
@@ -148,7 +149,7 @@ class Ui_MainWindow(object):
         self.pushButton_6 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_6.setGeometry(QtCore.QRect(550, 455, 80, 23))
         self.pushButton_6.setObjectName("pushButton_6")
-        self.pushButton_6.clicked.connect(grid_widget.generateRandomStart)
+        #self.pushButton_6.clicked.connect(grid_widget.generateRandomStart)
 
         self.actionCreate = QtWidgets.QAction(MainWindow)
         self.actionCreate.setObjectName("actionCreate")
@@ -159,7 +160,7 @@ class Ui_MainWindow(object):
         self.actionSave = QtWidgets.QAction(MainWindow)
         self.actionSave.setObjectName("actionSave")
         # 保存地图的方法
-        # self.actionSave.triggered.connect(grid_widget.saveMap)
+        self.actionSave.triggered.connect(grid_widget.saveMap)
 
         self.createArithmetic = QtWidgets.QAction(MainWindow)
         self.createArithmetic.setObjectName("createArithmetic")
@@ -218,12 +219,11 @@ class Ui_MainWindow(object):
         new_window = QtWidgets.QMainWindow()
         ui = Ui_MainWindow()
         grid_widget = GridWidget(ui)
-        pw = PygameWidget(ui)
-        ui.setupUi(new_window, pw)
+        ui.setupUi(new_window, grid_widget)
 
         new_window.setWindowTitle('基于Pygame的路径规划算法仿真平台')
         # 添加地图
-        ui.layout.addWidget(pw)
+        ui.layout.addWidget(grid_widget)
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
 
@@ -363,7 +363,7 @@ if __name__ == '__main__':
     ui = Ui_MainWindow()
     mainWindow = QtWidgets.QMainWindow()
     grid_widget = GridWidget(ui)
-    pw = PygameWidget(ui)
+    pw = PygameWidget()
     ui.setupUi(mainWindow, pw)
     # 添加地图
     ui.layout.addWidget(pw)

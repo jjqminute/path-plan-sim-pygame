@@ -7,10 +7,10 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QColor, QPainter
 from PyQt5.QtWidgets import QWidget, QFileDialog
 
-from arithmetic.Astar.Map import Map
+#from arithmetic.Astar.Map import Map
 from arithmetic.Astar.astar import astar
 from PyQt5.QtGui import QImage, QPixmap, QPainter
-
+from MapPygame import PygameWidget
 class GridWidget(QWidget):
     def __init__(self, main_window):
         super().__init__()
@@ -31,6 +31,7 @@ class GridWidget(QWidget):
         self.endPoint = None
         self.result = None
         self.win_main = main_window
+        self.obstacles = []
 
     # 绘图
     def paintEvent(self, event):
@@ -222,9 +223,10 @@ class GridWidget(QWidget):
             data = {
                 'startPoint': self.startPoint,
                 'endPoint': self.endPoint,
-                'map': self.block_map,
+                #'map': self.block_map,
                 'result': self.result,
-                'cell_size': self.cell_size
+                'cell_size': self.cell_size,
+                'obstacle':self.obstacles
             }
             with open(file_path, 'w') as file:
                 json.dump(data, file)
@@ -288,6 +290,15 @@ class GridWidget(QWidget):
                 self.clearObstacles()
                 # 清空地图后，重新设置地图分辨率
                 self.modifyMap(int(self.cell_size))
+
+                screen = pygame.Surface((self.width, self.height))
+
+                # 设置颜色
+                WHITE = (255, 255, 255)
+
+                # 设置背景颜色
+                screen.fill(WHITE)
+
                 # 将障碍点设置在地图中
                 for i in range(len(self.block_map)):
                     self.Map[self.block_map[i][0]][self.block_map[i][1]] = 0
