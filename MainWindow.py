@@ -58,7 +58,8 @@ class Ui_MainWindow(object):
         self.pushButton_3.setObjectName("pushButton_3")
         # 清除起始点方法链接
 
-        self.pushButton_3.clicked.connect(grid_widget.clearStartAndEnd)
+        # self.pushButton_3.clicked.connect(grid_widget.clearStartAndEnd)
+        self.pushButton_3.clicked.connect(self.grid_widget.rasterize_map)
 
         # 清楚所有障碍方法链接
         self.pushButton.clicked.connect(grid_widget.clear_map)

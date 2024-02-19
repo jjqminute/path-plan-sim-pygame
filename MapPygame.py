@@ -57,6 +57,7 @@ class PygameWidget(QWidget):
     OBS_RADIUS = 5
     WIDTH = 920
     HEIGHT = 390
+    CELL_SIZE = 50
 
     def __init__(self, main_window, parent=None):
         super(PygameWidget, self).__init__(parent)
@@ -87,8 +88,8 @@ class PygameWidget(QWidget):
         self.obs_surface.fill(self.back_color)
         self.plan_surface.fill(self.back_color)
 
-        # 障碍物以及起始点大小
-        self.cell_size = 10
+        # 栅格大小
+        self.cell_size = PygameWidget.CELL_SIZE
 
         # 创建一个空的绘制障碍物列表
         self.obstacles = []
@@ -97,11 +98,13 @@ class PygameWidget(QWidget):
         self.block_map = []
 
         # 地图列表
-        self.rows = self.width // self.cell_size
-        self.cols = self.height // self.cell_size
+        self.cols = self.width // self.cell_size
+        self.rows = self.height // self.cell_size
 
         # 初始化地图
-        self.map = [[0 for _ in range(self.cols)] for _ in range(self.rows)]
+        # self.map = [[0 for _ in range(self.cols)] for _ in range(self.rows)]
+        self.grid_map = numpy.zeros((self.cols, self.rows), dtype=numpy.uint8)
+
         # 起始点和终点
         self.start_point = None
         self.end_point = None
@@ -112,6 +115,7 @@ class PygameWidget(QWidget):
         self.timer.start(1000 // 60)  # 设置帧率为60
         self.win_main = main_window
 
+        # 初始化状态
         self.drawing = False
         self.last_pos = None
 
@@ -133,12 +137,6 @@ class PygameWidget(QWidget):
             if self.last_pos:
                 draw_line(self.obs_surface, self.obs_color, self.last_pos, current_pos, self.obs_radius)
             self.last_pos = current_pos
-        # x = event.pos().x()
-        # y = event.pos().y()
-        #
-        # if event.buttons() == Qt.LeftButton:
-        #     pygame.draw.circle(self.obs_surface, self.obs_color, (x, y), self.obs_radius)
-        #     # print((x, y))
 
         # if event.button() == Qt.LeftButton:  # 鼠标左键
         #
@@ -211,6 +209,24 @@ class PygameWidget(QWidget):
         painter = QPainter(self)
         painter.drawPixmap(0, 0, pixmap)
         painter.end()
+
+    def rasterize_map(self):
+
+        obs_array = pygame.surfarray.array3d(self.obs_surface)
+        # obs_array = numpy.transpose(obs_array, (1, 0, 2))
+
+        for y in range(self.rows):
+            for x in range(self.cols):
+                # 获取当前栅格对应的像素块
+                pixel_block = obs_array[x * self.cell_size:(x + 1) * self.cell_size,
+                                        y * self.cell_size:(y + 1) * self.cell_size]
+
+                # 检查像素块中是否存在非白色像素（障碍物）
+                if numpy.any(numpy.any(pixel_block != list(self.back_color), axis=2)):
+                    self.grid_map[x, y] = 1  # 标记为障碍物
+                    rect = pygame.Rect(x * self.cell_size, y * self.cell_size, self.cell_size,
+                                       self.cell_size)
+                    pygame.draw.rect(self.obs_surface, self.obs_color, rect)
 
     # 画起始点
     def painting_ori(self, x, y):
@@ -380,7 +396,7 @@ class PygameWidget(QWidget):
 
         for obs in contours:
             obs = obs.reshape(-1, 2).tolist()
-            pygame.draw.polygon(self.obs_surface, (255, 0, 0), obs)
+            pygame.draw.polygon(self.obs_surface, PygameWidget.OBS_COLOR, obs)
 
         # cv2.drawContours(capture_bgr, contours, -1, (0, 0, 255), 2)
         # self.obs_surface = cv_bgr_to_surface(capture_bgr)
