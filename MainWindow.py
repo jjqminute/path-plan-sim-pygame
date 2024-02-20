@@ -135,7 +135,7 @@ class Ui_MainWindow(object):
         # self.btn_default.clicked.connect(grid_widget.defaultMap)
 
         # 打开地图的方法
-        self.actionOpen.triggered.connect(grid_widget.openMap)
+        self.actionOpen.triggered.connect(grid_widget.open_map)
 
         # 输入起始点确认按钮
         self.pushButton_4 = QtWidgets.QPushButton(self.centralwidget)
@@ -163,7 +163,7 @@ class Ui_MainWindow(object):
         self.actionSave = QtWidgets.QAction(MainWindow)
         self.actionSave.setObjectName("actionSave")
         # 保存地图的方法
-        self.actionSave.triggered.connect(grid_widget.saveMap)
+        self.actionSave.triggered.connect(grid_widget.save_map)
 
         self.createArithmetic = QtWidgets.QAction(MainWindow)
         self.createArithmetic.setObjectName("createArithmetic")

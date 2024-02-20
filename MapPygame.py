@@ -97,17 +97,17 @@ class PygameWidget(QWidget):
         # 栅格大小
         self.cell_size = PygameWidget.CELL_SIZE
 
-        # 创建一个空的绘制障碍物列表
+        # 初始化多边形轮廓存储的障碍物
         self.obstacles = []
 
-        # 障碍物列表
-        self.block_map = []
+        # # 障碍物列表
+        # self.block_map = []
 
         # 地图列表
         self.cols = self.width // self.cell_size
         self.rows = self.height // self.cell_size
 
-        # 初始化地图
+        # 初始化栅格化存储的地图
         # self.map = [[0 for _ in range(self.cols)] for _ in range(self.rows)]
         self.grid_map = numpy.zeros((self.cols, self.rows), dtype=numpy.uint8)
 
@@ -120,8 +120,13 @@ class PygameWidget(QWidget):
         self.timer.timeout.connect(self.update)
         self.timer.start(1000 // 60)  # 设置帧率为60
 
+        # 初始化状态
+        self.drawing = False
+        self.last_pos = None
 
-    def saveMap(self):
+        self.main_window = main_window
+
+    def save_map(self):
         # 创建文件对话框
         dialog = QFileDialog()
         # 设置文件对话框为保存文件模式
@@ -136,29 +141,42 @@ class PygameWidget(QWidget):
         # 打开文件对话框，并返回保存的文件路径
         file_path, _ = dialog.getSaveFileName(self, '保存地图', '', '地图文件 (*.txt)')
 
-        if file_path:
-            features = []
+        if file_path is None:
+            self.main_window.printf("路径未选择！", None, None)
+            return
+
+        features = []
+
+        # feature_collection = None
+
+        if self.obstacles is not None:
+            for obstacle in self.obstacles:
+                if obstacle[0] != obstacle[-1]:
+                    obstacle.append(obstacle[0])
+                features.append(
+                    geojson.Feature(geometry=geojson.Polygon([obstacle]), properties={"name": "障碍物"}))
+
+        if self.start_point is not None and self.end_point is not None:
             start_point = Point(self.start_point)
             end_point = Point(self.end_point)
-            multi_points = self.obstacles
-            if multi_points:
-                features.append(geojson.Feature(geometry=geojson.MultiPoint(multi_points),properties={"name": "障碍物点"}))
             features.append(Feature(geometry=start_point, properties={"name": "起始点"}))
             features.append(Feature(geometry=end_point, properties={"name": "终点"}))
-            feature_collection = FeatureCollection(features)
 
-            # 将FeatureCollection保存为GeoJSON格式的字符串
-            geojson_str = json.dumps(feature_collection, indent=4)
+        feature_collection = FeatureCollection(features)
 
-            print(geojson_str)
+        # 将FeatureCollection保存为GeoJSON格式的字符串
+        geojson_str = json.dumps(feature_collection, indent=4)
 
-            with open(file_path, 'w') as file:
-                file.write(geojson_str)
-            self.win_main.printf("地图已成功保存！", None, None)
-            # 关闭文件保存对话框
-            # self.win_main.quit()
+        print(geojson_str)
 
-    def openMap(self):
+        with open(file_path, 'w') as file:
+            file.write(geojson_str)
+        self.main_window.printf("地图已成功保存！", None, None)
+
+        # 关闭文件保存对话框
+        # self.win_main.quit()
+
+    def open_map(self):
         # 创建文件对话框
         dialog = QFileDialog()
         # 设置文件对话框标题
@@ -169,69 +187,73 @@ class PygameWidget(QWidget):
         # 打开文件对话框，并返回选择的文件路径
         file_path, _ = dialog.getOpenFileName(self, '打开地图', '', '地图文件 (*.txt *.csv)')
 
+        # with open('file_path', 'r') as file:
+        #     data = json.load(file)
+        # 打开并读取txt文件内容
+        if not file_path:
+            self.main_window.printf("路径未选择！", None, None)
+            return
         # 如果选择了文件路径，则进行地图识别的操作
-        if file_path:
-            if file_path:
-                # with open('file_path', 'r') as file:
-                #     data = json.load(file)
-                # 打开并读取txt文件内容
-                with open(file_path, 'r') as file:
-                    geojson_str = file.read()
+        with open(file_path, 'r') as file:
+            geojson_str = file.read()
 
-                    # 将字符串解析为GeoJSON对象
-                geojson_obj = geojson.loads(geojson_str)
-                print(geojson_obj)
-                # 打开地图前需要先清空地图
-                # self.clearObstacles()
-                # # 清空地图后，重新设置地图分辨率
-                # self.modifyMap(int(self.cell_size))
-                multi_points = []
-                for feature in geojson_obj['features']:
-                    geometry = feature['geometry']
-                    properties =feature['properties']
-                    if geometry['type'] == 'Point' and properties['name']=="\u8d77\u59cb\u70b9":
-                        self.start_point = geometry['coordinates']
-                    if geometry['type'] == 'Point' and properties['name']=="\u7ec8\u70b9":
-                        self.end_point = geometry['coordinates']
-                    elif geometry['type'] == 'MultiPoint':
-                        multi_points.extend(geometry['coordinates'])
-                self.obstacles=multi_points
+        # 将字符串解析为GeoJSON对象
+        geojson_obj = geojson.loads(geojson_str)
+        print(geojson_obj)
+        # 打开地图前需要先清空地图
+        # self.clearObstacles()
+        # # 清空地图后，重新设置地图分辨率
+        # self.modifyMap(int(self.cell_size))
+        obstacles = []
+        for feature in geojson_obj['features']:
+            geometry = feature['geometry']
+            properties = feature['properties']
+            if geometry['type'] == 'Point' and properties['name'] == "\u8d77\u59cb\u70b9":
+                self.start_point = geometry['coordinates']
+            if geometry['type'] == 'Point' and properties['name'] == "\u7ec8\u70b9":
+                self.end_point = geometry['coordinates']
+            elif geometry['type'] == 'Polygon':
+                obstacles.append(geometry['coordinates'][0])
 
-                screen = pygame.Surface((self.width, self.height))
+        self.obstacles = obstacles
 
-                # 设置颜色
-                WHITE = (255, 255, 255)
+        # print(obstacles)
 
-                # 设置背景颜色
-                screen.fill(WHITE)
+        self.obs_surface.fill(self.back_color)
 
-                # 绘制障碍物
-                for obstacle in self.obstacles:
-                    pygame.draw.rect(screen, (0, 0, 0), (obstacle[0], obstacle[1], self.cell_size, self.cell_size), 0)
+        for obs in obstacles:
+            pygame.draw.polygon(self.obs_surface, PygameWidget.OBS_COLOR, obs)
 
-                # 绘制起始点和终点
-                if self.start_point:
-                    pygame.draw.rect(screen, (0, 255, 0),
-                                     (self.start_point[0], self.start_point[1], self.cell_size, self.cell_size), 0)
-                if self.end_point:
-                    pygame.draw.rect(screen, (255, 0, 0),
-                                     (self.end_point[0], self.end_point[1], self.cell_size, self.cell_size), 0)
-
-                # 将pygame surface转换为QImage
-                image = QImage(screen.get_buffer(), self.width, self.height, QImage.Format_RGB32)
-
-                # 将QImage转换为QPixmap
-                pixmap = QPixmap.fromImage(image)
-
-                # 使用QPainter绘制pixmap
-                painter = QPainter(self)
-                painter.drawPixmap(0, 0, pixmap)
-                painter.end()
-
-
-        # 初始化状态
-        self.drawing = False
-        self.last_pos = None
+        # screen = pygame.Surface((self.width, self.height))
+        #
+        # # 设置颜色
+        # WHITE = (255, 255, 255)
+        #
+        # # 设置背景颜色
+        # screen.fill(WHITE)
+        #
+        # # 绘制障碍物
+        # for obstacle in self.obstacles:
+        #     pygame.draw.rect(screen, (0, 0, 0), (obstacle[0], obstacle[1], self.cell_size, self.cell_size), 0)
+        #
+        # # 绘制起始点和终点
+        # if self.start_point:
+        #     pygame.draw.rect(screen, (0, 255, 0),
+        #                      (self.start_point[0], self.start_point[1], self.cell_size, self.cell_size), 0)
+        # if self.end_point:
+        #     pygame.draw.rect(screen, (255, 0, 0),
+        #                      (self.end_point[0], self.end_point[1], self.cell_size, self.cell_size), 0)
+        #
+        # # 将pygame surface转换为QImage
+        # image = QImage(screen.get_buffer(), self.width, self.height, QImage.Format_RGB32)
+        #
+        # # 将QImage转换为QPixmap
+        # pixmap = QPixmap.fromImage(image)
+        #
+        # # 使用QPainter绘制pixmap
+        # painter = QPainter(self)
+        # painter.drawPixmap(0, 0, pixmap)
+        # painter.end()
 
     # 鼠标点击事件处理
     def mousePressEvent(self, event):
@@ -333,7 +355,7 @@ class PygameWidget(QWidget):
             for x in range(self.cols):
                 # 获取当前栅格对应的像素块
                 pixel_block = obs_array[x * self.cell_size:(x + 1) * self.cell_size,
-                                        y * self.cell_size:(y + 1) * self.cell_size]
+                              y * self.cell_size:(y + 1) * self.cell_size]
 
                 # 检查像素块中是否存在非白色像素（障碍物）
                 if numpy.any(numpy.any(pixel_block != list(self.back_color), axis=2)):
@@ -470,7 +492,6 @@ class PygameWidget(QWidget):
         else:
             self.win_main.printf("当前地图已起始点或障碍点不可调整地图分辨率，请清空地图后再次调整分辨率！", None, None)
 
-
     # 随机起始点方法
     def generateRandomStart(self):
         if self.start_point is None:
@@ -517,9 +538,18 @@ class PygameWidget(QWidget):
         _, binary = cv2.threshold(capture_gray, 254, 255, cv2.THRESH_BINARY_INV)
         contours, hierarchy = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
+        # for obs in contours:
+        #     obs = obs.reshape(-1, 2).tolist()
+        #     pygame.draw.polygon(self.obs_surface, PygameWidget.OBS_COLOR, obs)
+
+        self.obstacles = []
+
         for obs in contours:
-            obs = obs.reshape(-1, 2).tolist()
-            pygame.draw.polygon(self.obs_surface, PygameWidget.OBS_COLOR, obs)
+            obstacle = obs.squeeze().tolist()
+            pygame.draw.polygon(self.obs_surface, PygameWidget.OBS_COLOR, obstacle)
+            self.obstacles.append(obstacle)
+
+        # print(self.obstacles)
 
         # cv2.drawContours(capture_bgr, contours, -1, (0, 0, 255), 2)
         # self.obs_surface = cv_bgr_to_surface(capture_bgr)
@@ -529,7 +559,7 @@ class PygameWidget(QWidget):
         # print(contours)
         # print(hierarchy)
 
-        return contours
+        # return contours
 
 
 class MainWindow(QMainWindow):
