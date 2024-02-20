@@ -12,8 +12,13 @@ import time
 from arithmetic.Astar.Map import Map
 from arithmetic.Astar.astar import astar
 
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
 
 class PygameWidget(QWidget):
+    BACK_COLOR = WHITE
+    OBS_COLOR = BLACK
+    OBS_RADIUS = 10
     def __init__(self, main_window, parent=None):
         super(PygameWidget, self).__init__(parent)
 
@@ -26,6 +31,17 @@ class PygameWidget(QWidget):
 
         # 初始化pygame
         pygame.init()
+
+        #设置主平面 设置主平面，障碍物平面和路径规划平面
+        self.surface = pygame.Surface((self.width, self.height))
+        self.obs_surface = pygame.Surface((self.width, self.height))
+        self.plan_surface = pygame.Surface((self.width, self.height))
+
+        # 设置障碍物平面和路径规划平面的透明色
+        self.obs_surface.set_colorkey(self.BACK_COLOR)
+        self.plan_surface.set_colorkey(self.BACK_COLOR)
+        self.obs_surface.fill(self.BACK_COLOR)
+        self.plan_surface.fill(self.BACK_COLOR)
 
         # 创建一个空的绘制障碍物列表
         self.obstacles = []
@@ -50,7 +66,8 @@ class PygameWidget(QWidget):
         self.result = None
 
     def startPath(self):
-        self.result = astar(self)
+        self.result = astar(self)[0]
+        #self.plan_surface=astar(self)[1]
 
     # 鼠标点击事件处理
     def mousePressEvent(self, event):
@@ -93,29 +110,31 @@ class PygameWidget(QWidget):
     # 绘制pygame界面
     def paintEvent(self, event):
         # 创建一个新的surface
-        screen = pygame.Surface((self.width, self.height))
-
-        # 设置颜色
-        WHITE = (255, 255, 255)
-
-        # 设置背景颜色
-        screen.fill(WHITE)
+        # screen = pygame.Surface((self.width, self.height))
+        #
+        # # 设置颜色
+        # WHITE = (255, 255, 255)
+        #
+        # # 设置背景颜色
+        # screen.fill(WHITE)
 
         if self.result is not None:
             for k in self.result:
-                pygame.draw.rect(screen, (0, 100, 255), (k[0], k[1], self.cell_size, self.cell_size), 0)
+                pygame.draw.rect(self.obs_surface, (0, 100, 255), (k[0], k[1], self.cell_size, self.cell_size), 0)
         # 绘制障碍物
         for obstacle in self.obstacles:
-            pygame.draw.rect(screen, (0, 0, 0), (obstacle[0], obstacle[1], self.cell_size, self.cell_size), 0)
+            pygame.draw.rect(self.obs_surface, (0, 0, 0), (obstacle[0], obstacle[1], self.cell_size, self.cell_size), 0)
 
         # 绘制起始点和终点
         if self.start_point:
-            pygame.draw.rect(screen, (0, 255, 0),
+            pygame.draw.rect(self.obs_surface, (0, 255, 0),
                              (self.start_point[0], self.start_point[1], self.cell_size, self.cell_size), 0)
         if self.end_point:
-            pygame.draw.rect(screen, (255, 0, 0),
+            pygame.draw.rect(self.obs_surface, (255, 0, 0),
                              (self.end_point[0], self.end_point[1], self.cell_size, self.cell_size), 0)
-
+        self.surface.fill(PygameWidget.BACK_COLOR)
+        self.surface.blit(self.plan_surface, (0, 0))
+        self.surface.blit(self.obs_surface, (0, 0))
         # if openList:
         #     for k in openList:
         #         pygame.draw.rect(screen, (150, 0, 0), (k.x, k.y, self.cell_size, self.cell_size), 0)
@@ -125,7 +144,10 @@ class PygameWidget(QWidget):
 
                 # print(k[0],k[1])
         # 将pygame surface转换为QImage
-        image = QImage(screen.get_buffer(), self.width, self.height, QImage.Format_RGB32)
+        buffer = self.surface.get_buffer()
+        img_data = buffer.raw
+        del buffer
+        image = QImage(img_data, self.width, self.height, QImage.Format_RGB32)
 
         # 将QImage转换为QPixmap
         pixmap = QPixmap.fromImage(image)
@@ -159,11 +181,11 @@ class PygameWidget(QWidget):
                              (self.end_point[0], self.end_point[1], self.cell_size, self.cell_size), 0)
 
         if openList:
-            print(openList)
+            #print(openList)
             for k in openList:
                 pygame.draw.rect(screen, (150, 0, 0), (k.x, k.y, self.cell_size, self.cell_size), 0)
         if closeList:
-            print(closeList)
+            #print(closeList)
             for k in closeList:
                 pygame.draw.rect(screen, (150, 150, 150), (k.x, k.y, self.cell_size, self.cell_size), 0)
         if result is not None:

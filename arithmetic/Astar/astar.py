@@ -1,5 +1,7 @@
 # 姓名：高翔
 # 2024/1/29 11:40
+import time
+
 from .Node import Node
 import pygame
 
@@ -22,6 +24,7 @@ def astar(workMap):
     lockList.append(startNode)
     currNode = startNode
     result = []
+    screen=workMap.plan_surface
     while (endx, endy) != (currNode.x, currNode.y):
         # 查找临近节点
         print(currNode.x, currNode.y)
@@ -36,11 +39,19 @@ def astar(workMap):
         openList.sort(key=getKeyforSort)  # 关键步骤
         currNode = openList.pop(0)
         lockList.append(currNode)
-        workMap.paintAstar(openList,lockList)
+        if openList:
+            #print(openList)
+            for k in openList:
+                pygame.draw.rect(screen, (150, 0, 0), (k.x, k.y, workMap.cell_size, workMap.cell_size), 0)
+
+        if lockList:
+            for k in lockList:
+                pygame.draw.rect(screen, (150, 150, 150), (k.x, k.y, workMap.cell_size, workMap.cell_size), 0)
+
 
     while currNode.father != None:
         result.append((currNode.x, currNode.y))
         currNode = currNode.father
     result.append((currNode.x, currNode.y))
     workMap.paintAstar(openList, lockList,result)
-    return result
+    return result,screen
