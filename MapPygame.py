@@ -7,7 +7,7 @@ from PyQt5.QtGui import QImage, QPixmap, QPainter, QColor
 from PyQt5.QtCore import QTimer
 import random
 import time
-#from pygame import time
+# from pygame import time
 
 from arithmetic.Astar.Map import Map
 from arithmetic.Astar.astar import astar
@@ -15,10 +15,12 @@ from arithmetic.Astar.astar import astar
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
+
 class PygameWidget(QWidget):
     BACK_COLOR = WHITE
     OBS_COLOR = BLACK
     OBS_RADIUS = 10
+
     def __init__(self, main_window, parent=None):
         super(PygameWidget, self).__init__(parent)
 
@@ -32,7 +34,7 @@ class PygameWidget(QWidget):
         # 初始化pygame
         pygame.init()
 
-        #设置主平面 设置主平面，障碍物平面和路径规划平面
+        # 设置主平面 设置主平面，障碍物平面和路径规划平面
         self.surface = pygame.Surface((self.width, self.height))
         self.obs_surface = pygame.Surface((self.width, self.height))
         self.plan_surface = pygame.Surface((self.width, self.height))
@@ -64,16 +66,20 @@ class PygameWidget(QWidget):
         self.timer.start(1000 // 60)  # 设置帧率为60
         self.win_main = main_window
         self.result = None
+        self.search = None
 
     def startPath(self):
-        self.result = astar(self)[0]
-        #self.plan_surface=astar(self)[1]
+        self.result = None
+        self.obs_surface.fill(PygameWidget.BACK_COLOR)
+        self.search = astar(self)
+        self.result = self.search.process()
+        # self.plan_surface=self.search.process()()[1]
 
     # 鼠标点击事件处理
     def mousePressEvent(self, event):
         x = event.pos().x()
         y = event.pos().y()
-
+        self.obs_surface.fill(PygameWidget.BACK_COLOR)
         if event.button() == Qt.LeftButton:  # 鼠标左键
             if (x, y) != self.start_point and (x, y) != self.end_point:
                 # 将鼠标点击的位置对齐到网格上
@@ -120,7 +126,7 @@ class PygameWidget(QWidget):
 
         if self.result is not None:
             for k in self.result:
-                pygame.draw.rect(self.obs_surface, (0, 100, 255), (k[0], k[1], self.cell_size, self.cell_size), 0)
+                pygame.draw.rect(self.obs_surface, (0, 100, 255), (k.x, k.y, self.cell_size, self.cell_size), 0)
         # 绘制障碍物
         for obstacle in self.obstacles:
             pygame.draw.rect(self.obs_surface, (0, 0, 0), (obstacle[0], obstacle[1], self.cell_size, self.cell_size), 0)
@@ -142,7 +148,7 @@ class PygameWidget(QWidget):
         #     for k in closeList:
         #         pygame.draw.rect(screen, (150, 150, 150), (k.x, k.y, self.cell_size, self.cell_size), 0)
 
-                # print(k[0],k[1])
+        # print(k[0],k[1])
         # 将pygame surface转换为QImage
         buffer = self.surface.get_buffer()
         img_data = buffer.raw
@@ -157,53 +163,28 @@ class PygameWidget(QWidget):
         painter.drawPixmap(0, 0, pixmap)
         painter.end()
 
-
-    def paintAstar(self, openList, closeList, result=None):
+    def paintAstar(self, openList, closeList):
         # 创建一个新的surface
-        screen = pygame.Surface((self.width, self.height))
+        self.plan_surface = pygame.Surface((self.width, self.height))
 
         # 设置颜色
         WHITE = (255, 255, 255)
 
         # 设置背景颜色
-        screen.fill(WHITE)
+        self.plan_surface.fill(WHITE)
         print("进入绘制")
         # 绘制障碍物
-        for obstacle in self.obstacles:
-            pygame.draw.rect(screen, (0, 0, 0), (obstacle[0], obstacle[1], self.cell_size, self.cell_size), 0)
-
-        # 绘制起始点和终点
-        if self.start_point:
-            pygame.draw.rect(screen, (0, 255, 0),
-                             (self.start_point[0], self.start_point[1], self.cell_size, self.cell_size), 0)
-        if self.end_point:
-            pygame.draw.rect(screen, (255, 0, 0),
-                             (self.end_point[0], self.end_point[1], self.cell_size, self.cell_size), 0)
-
         if openList:
-            #print(openList)
+            # print(openList)
             for k in openList:
-                pygame.draw.rect(screen, (150, 0, 0), (k.x, k.y, self.cell_size, self.cell_size), 0)
+                pygame.draw.rect(self.plan_surface, (150, 0, 0), (k.x, k.y, self.cell_size, self.cell_size), 0)
         if closeList:
-            #print(closeList)
+            # print(closeList)
             for k in closeList:
-                pygame.draw.rect(screen, (150, 150, 150), (k.x, k.y, self.cell_size, self.cell_size), 0)
-        if result is not None:
-            for k in result:
-                pygame.draw.rect(screen, (0, 100, 255), (k[0], k[1], self.cell_size, self.cell_size), 0)
-                # print(k[0],k[1])
-        # 将pygame surface转换为QImage
-        image = QImage(screen.get_buffer(), self.width, self.height, QImage.Format_RGB32)
-
-        # 将QImage转换为QPixmap
-        pixmap = QPixmap.fromImage(image)
-
-        # 使用QPainter绘制pixmap
-        painter = QPainter(self)
-        painter.drawPixmap(0, 0, pixmap)
-        painter.end()
-        #time.sleep(1)
-
+                pygame.draw.rect(self.plan_surface, (150, 150, 150), (k.x, k.y, self.cell_size, self.cell_size), 0)
+        self.surface.blit(self.plan_surface, (0, 0))
+        QWidget().repaint()
+        #time.sleep(0.1)
     # 画起始点
     def painting_ori(self, x, y):
         # 绘画起点 这个和点击画起始点功能冲突 暂时分隔这两个功能，假设输入起始点前地图为空，所以直接填色即可
@@ -358,12 +339,16 @@ class PygameWidget(QWidget):
 
     # 清空地图方法
     def clear_map(self):
+
         self.start_point = None  # 清除起点
         self.end_point = None  # 清除终点
         self.obstacles = []  # 清空障碍物列表
         self.map = [[0 for _ in range(self.cols)] for _ in range(self.rows)]
-        self.result=None
+        self.result = None
         self.win_main.printf("已经清空地图", None, None)
+        self.surface.fill(PygameWidget.BACK_COLOR)
+        self.obs_surface.fill(PygameWidget.BACK_COLOR)
+        self.plan_surface.fill(PygameWidget.BACK_COLOR)
         self.update()  # 更新界面
 
     # 清空地图起始点
