@@ -116,6 +116,9 @@ class astar:  # 核心部分，寻路类
                     pygame.draw.rect(self.screen, (150, 150, 150), (k.x, k.y, self.cell_size, self.cell_size), 0)
                     break
     def process(self):  # 使用yield将process方法变成一个生成器，可以逐步的对搜索过程进行处理并返回关键数据
+        start = time.time()
+
+
         while True:
             self.count += 1
             tar = self.F_Min()  # 先获取open列表中F值最低的点tar
@@ -144,7 +147,9 @@ class astar:  # 核心部分，寻路类
             #self.draw(tar, self.open, self.close)
             self.mapdata.paintAstar(self.open, self.close)
             #time.sleep(1)  # 暂停
-
+        end = time.time()
+        print("花费时间为")
+        print(end-start)
         return self.result
             # self.repaint()
             # print('返回')
