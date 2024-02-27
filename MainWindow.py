@@ -35,18 +35,20 @@ class Ui_MainWindow(object):
         self.text_input_2.setPlaceholderText("输入终点横纵坐标(x,y):")
         self.text_input_2.setGeometry(QtCore.QRect(640, 425, 200, 25))
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
+
+        # self.pushButton.setGeometry(QtCore.QRect(40, 450, 75, 23))
+        # 纵坐标输入框
         self.pushButton.setGeometry(QtCore.QRect(130, 425, 75, 25))
         self.pushButton.setObjectName("pushButton")
-        self.pushButton.clicked.connect(grid_widget.clear_map)
         self.text_result = QtWidgets.QTextBrowser(self.centralwidget)
         self.text_result.setGeometry(QtCore.QRect(40, 500, 921, 251))
         self.text_result.setObjectName("text_result")
         # 开始规划按钮
         self.pushButton_new = QtWidgets.QPushButton(self.centralwidget)
+        # self.pushButton.setGeometry(QtCore.QRect(40, 450, 75, 23))
         self.pushButton_new.setGeometry(QtCore.QRect(40, 425, 75, 25))
         self.pushButton_new.setObjectName("pushButton_new")
         # self.pushButton_new.clicked.connect(self.startPath)
-
         self.grid_widget = grid_widget
         self.pushButton_new.clicked.connect(self.grid_widget.get_obs_vertices)
 
@@ -144,8 +146,8 @@ class Ui_MainWindow(object):
         self.pushButton_5 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_5.setGeometry(QtCore.QRect(460, 455, 80, 23))
         self.pushButton_5.setObjectName("pushButton_5")
-
-        self.pushButton_5.clicked.connect(lambda:grid_widget.random_graph(int(self.lineEdit_block.text())))
+        self.pushButton_5.clicked.connect(self.block_click)
+        # self.pushButton_5.clicked.connect(lambda:grid_widget.randomBlock(int(self.lineEdit_block.text())))
         # 随机起始点按钮
         self.pushButton_6 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_6.setGeometry(QtCore.QRect(550, 455, 80, 23))
