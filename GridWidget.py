@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QWidget, QFileDialog
 from arithmetic.Astar.astar import astar
 from PyQt5.QtGui import QImage, QPixmap, QPainter
 from MapPygame import PygameWidget
+
 class GridWidget(QWidget):
     def __init__(self, main_window):
         super().__init__()
@@ -390,18 +391,9 @@ class GridWidget(QWidget):
 
         self.update()
 
-    # 根据数量生成随机障碍物新方法
+    # 根据数量生成随机障碍物新方法 num障碍物数量
     def randomBlock(self,num):
-        for i in range(num):
-            while True:
-                x = random.randint(0, self.width - 1)
-                y = random.randint(0, self.height - 1)
-                if (x, y) != self.startPoint and (x, y) != self.endPoint and self.Map[y][x] != 0:
-                    self.Map[y][x] = 0 # 设置障碍物
-                    self.grid_colors[x][y] = QColor(0, 0, 0)
-                    break
-        print(self.Map)
-        self.update()
+        None
 
     # 随机起始点方法
     def generateRandomStart(self):

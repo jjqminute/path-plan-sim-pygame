@@ -455,6 +455,39 @@ class PygameWidget(QWidget):
             self.obstacles.append(coordinates)
         self.paint_block(x1, y1, x2, y2)
 
+    def random_graph(self,count):
+        print(count)
+        for _ in range(count):
+            print(_)
+            shape_type = random.randrange(3)  # 0表示圆形，1表示矩形
+            if shape_type == 0:
+                radius = random.randrange(10, 51)
+                x = random.randrange(radius, self.width - radius)
+                y = random.randrange(radius, self.height - radius)
+                pygame.draw.circle(self.obs_surface, self.obs_color, (x, y), radius)
+            elif shape_type == 1:
+                width = random.randrange(20, 81)
+                height = random.randrange(20, 81)
+                x = random.randrange(0, self.width - width)
+                y = random.randrange(0, self.height - height)
+                pygame.draw.rect(self.obs_surface, self.obs_color, (x, y, width, height))
+            elif shape_type == 2:
+                # 生成随机位置
+                x = random.randint(0, self.width)
+                y = random.randint(0, self.height)
+                # 生成随机大小
+                size = random.randint(50, 200)
+                num_sides = random.randint(3, 5)  # 随机生成3至8边形
+                points = [(random.randint(x - size, x + size), random.randint(y - size, y + size)) for _ in range(num_sides)]
+
+                # 设置颜色
+                green = (0, 255, 0)
+
+                # 绘制多边形
+                pygame.draw.polygon(self.obs_surface, green, points)
+        self.update()
+
+
     def paint_block(self, x1, y1, x2, y2):
 
         screen = pygame.Surface((self.width, self.height))
@@ -522,6 +555,9 @@ class PygameWidget(QWidget):
         self.start_point = None  # 清除起点
         self.end_point = None  # 清除终点
         self.obstacles = []  # 清空障碍物列表
+        # 初始化地图
+        self.obs_surface.fill((0, 0, 0))
+        self.plan_surface.fill((0, 0, 0))
         self.win_main.printf("已经清空地图", None, None)
         self.update()  # 更新界面
 
@@ -549,6 +585,7 @@ class PygameWidget(QWidget):
             pygame.draw.polygon(self.obs_surface, PygameWidget.OBS_COLOR, obstacle)
             self.obstacles.append(obstacle)
 
+        print(self.obstacles)
         # print(self.obstacles)
 
         # cv2.drawContours(capture_bgr, contours, -1, (0, 0, 255), 2)
