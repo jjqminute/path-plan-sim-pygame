@@ -66,6 +66,7 @@ class Ui_MainWindow(object):
         # self.checkBox = QtWidgets.QCheckBox(self.centralwidget)
         # self.checkBox.setGeometry(QtCore.QRect(310, 450, 71, 21))
         # self.checkBox.setObjectName("checkBox")
+
         self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
         self.verticalLayoutWidget.setGeometry(QtCore.QRect(40, 20, 921, 401))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
@@ -97,6 +98,7 @@ class Ui_MainWindow(object):
         self.toolBar = QtWidgets.QToolBar(MainWindow)
         self.toolBar.setObjectName("toolBar")
         MainWindow.addToolBar(QtCore.Qt.ToolBarArea.TopToolBarArea, self.toolBar)
+
         self.actionLoadTest = QtWidgets.QAction(MainWindow)
         self.actionLoadTest.setObjectName("actionLoadTest")
         self.actionExit = QtWidgets.QAction(MainWindow)
@@ -153,6 +155,11 @@ class Ui_MainWindow(object):
         self.pushButton_6.setGeometry(QtCore.QRect(550, 455, 80, 23))
         self.pushButton_6.setObjectName("pushButton_6")
         self.pushButton_6.clicked.connect(grid_widget.generateRandomStart)
+        # 开始规划按钮
+        self.pushButton_7 = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_7.setGeometry(QtCore.QRect(640, 455, 80, 23))
+        self.pushButton_7.setObjectName("pushButton_7")
+        # self.pushButton_7.clicked.connect() # 方法
 
         self.actionCreate = QtWidgets.QAction(MainWindow)
         self.actionCreate.setObjectName("actionCreate")
@@ -294,6 +301,7 @@ class Ui_MainWindow(object):
         self.pushButton_4.setText(_translate("MainWindow", "生成"))
         self.pushButton_5.setText(_translate("MainWindow", "随机障碍物"))
         self.pushButton_6.setText(_translate("MainWindow", "随机起始点"))
+        self.pushButton_7.setText(_translate("MainWindow", "开始规划"))
         self.combo_arithmetic.setItemText(0, _translate("MainWindow", "请选择算法"))
         self.combo_arithmetic.setItemText(1, _translate("MainWindow", "Astar"))
         self.combo_arithmetic.setItemText(2, _translate("MainWindow", "RRT"))

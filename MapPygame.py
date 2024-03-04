@@ -395,6 +395,8 @@ class PygameWidget(QWidget):
                     new_size = int(size)
                     self.cell_size = new_size
                     print(self.cell_size)
+                    self.cols = self.width // self.cell_size
+                    self.rows = self.height // self.cell_size
                     self.main_window.printf("分辨率调整成功！", None, None)
                 else:
                     self.main_window.printf("请输入正确的分辨率！", None, None)
@@ -483,6 +485,7 @@ class PygameWidget(QWidget):
         # print(hierarchy)
 
         # return contours
+
     #  随机多边形障碍物
     def random_graph(self,count):
         for _ in range(count):
