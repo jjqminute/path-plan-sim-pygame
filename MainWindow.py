@@ -61,8 +61,8 @@ class Ui_MainWindow(object):
         # self.pushButton_3.clicked.connect(grid_widget.clearStartAndEnd)
         self.pushButton_3.clicked.connect(self.grid_widget.rasterize_map)
 
-        # 清楚所有障碍方法链接
-        self.pushButton.clicked.connect(grid_widget.clear_obstacles)
+        # 清除所有障碍方法链接
+        self.pushButton.clicked.connect(grid_widget.clear_map)
         # self.checkBox = QtWidgets.QCheckBox(self.centralwidget)
         # self.checkBox.setGeometry(QtCore.QRect(310, 450, 71, 21))
         # self.checkBox.setObjectName("checkBox")
