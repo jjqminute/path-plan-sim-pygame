@@ -313,7 +313,10 @@ class Ui_MainWindow(object):
         # 根据不同的算法
         if self.combo_arithmetic.currentText() == "Astar":
             print("启动A星算法！！！")
-            self.grid_widget.startPath()
+            self.grid_widget.startAstar()
+        elif self.combo_arithmetic.currentText() == "RRT":
+            print("启动RRT算法！！！")
+            self.grid_widget.startRtt()
 
     def ori_end_input(self):  # 输入起始点终点函数
         coordinate = self.text_input.text()
