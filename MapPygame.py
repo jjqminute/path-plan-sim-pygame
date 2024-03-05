@@ -1,5 +1,7 @@
 import math
 import sys
+import time
+
 import pygame
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QFileDialog
 from PyQt5.QtWidgets import QFrame
@@ -15,6 +17,8 @@ import geopandas as gpd
 from shapely.geometry import Point, MultiPoint, shape
 import cv2
 import numpy
+from arithmetic.Astar.Map import Map
+from arithmetic.Astar.astar import astar
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -127,6 +131,19 @@ class PygameWidget(QWidget):
 
         self.main_window = main_window
 
+    def startPath(self):
+        self.result = None
+        self.obs_surface.fill(PygameWidget.BACK_COLOR)
+        self.search = astar(self)
+        self.result = self.search.process()
+
+        if self.result is not None:
+            for k in self.result:
+
+                pygame.draw.circle(self.plan_surface,(0,100,255),(k.x,k.y),self.obs_radius)
+                #time.sleep(0.1)
+
+        # self.plan_surface=self.search.process()()[1]
     def save_map(self):
         # 创建文件对话框
         dialog = QFileDialog()
@@ -214,7 +231,7 @@ class PygameWidget(QWidget):
             if geometry['type'] == 'Point' and properties['name'] == "\u7ec8\u70b9":
                 self.end_point = geometry['coordinates']
             elif geometry['type'] == 'Polygon':
-                obstacles.append(geometry['coordinates'][0])
+                obstacles.append(tuple(geometry['coordinates'][0]))
 
         self.obstacles = obstacles
 

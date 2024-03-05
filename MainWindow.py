@@ -159,7 +159,7 @@ class Ui_MainWindow(object):
         self.pushButton_7 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_7.setGeometry(QtCore.QRect(640, 455, 80, 23))
         self.pushButton_7.setObjectName("pushButton_7")
-        # self.pushButton_7.clicked.connect() # 方法
+        self.pushButton_7.clicked.connect(self.startPath) # 方法
 
         self.actionCreate = QtWidgets.QAction(MainWindow)
         self.actionCreate.setObjectName("actionCreate")
@@ -311,7 +311,8 @@ class Ui_MainWindow(object):
     # 路径规划
     def startPath(self):
         # 根据不同的算法
-        if self.checkBox.isChecked():
+        if self.combo_arithmetic.currentText() == "Astar":
+            print("启动A星算法！！！")
             self.grid_widget.startPath()
 
     def ori_end_input(self):  # 输入起始点终点函数
