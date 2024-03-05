@@ -66,6 +66,7 @@ class Ui_MainWindow(object):
         # self.checkBox = QtWidgets.QCheckBox(self.centralwidget)
         # self.checkBox.setGeometry(QtCore.QRect(310, 450, 71, 21))
         # self.checkBox.setObjectName("checkBox")
+
         self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
         self.verticalLayoutWidget.setGeometry(QtCore.QRect(40, 20, 921, 401))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
@@ -97,6 +98,7 @@ class Ui_MainWindow(object):
         self.toolBar = QtWidgets.QToolBar(MainWindow)
         self.toolBar.setObjectName("toolBar")
         MainWindow.addToolBar(QtCore.Qt.ToolBarArea.TopToolBarArea, self.toolBar)
+
         self.actionLoadTest = QtWidgets.QAction(MainWindow)
         self.actionLoadTest.setObjectName("actionLoadTest")
         self.actionExit = QtWidgets.QAction(MainWindow)
@@ -146,13 +148,18 @@ class Ui_MainWindow(object):
         self.pushButton_5 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_5.setGeometry(QtCore.QRect(460, 455, 80, 23))
         self.pushButton_5.setObjectName("pushButton_5")
-        self.pushButton_5.clicked.connect(self.block_click)
-        # self.pushButton_5.clicked.connect(lambda:grid_widget.randomBlock(int(self.lineEdit_block.text())))
+        # self.pushButton_5.clicked.connect(self.block_click)
+        self.pushButton_5.clicked.connect(lambda:grid_widget.random_graph(int(self.lineEdit_block.text())))
         # 随机起始点按钮
         self.pushButton_6 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_6.setGeometry(QtCore.QRect(550, 455, 80, 23))
         self.pushButton_6.setObjectName("pushButton_6")
-        #self.pushButton_6.clicked.connect(grid_widget.generateRandomStart)
+        self.pushButton_6.clicked.connect(grid_widget.generateRandomStart)
+        # 开始规划按钮
+        self.pushButton_7 = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_7.setGeometry(QtCore.QRect(640, 455, 80, 23))
+        self.pushButton_7.setObjectName("pushButton_7")
+        # self.pushButton_7.clicked.connect() # 方法
 
         self.actionCreate = QtWidgets.QAction(MainWindow)
         self.actionCreate.setObjectName("actionCreate")
@@ -270,8 +277,8 @@ class Ui_MainWindow(object):
         self.text_result.append(
             "欢迎来到基于Pygame的路径规划算法仿真平台，以下是路径规划的结果仅供大家参考（右键按第一次是起点第二次是终点，左键设置起点）：")
         self.text_result.append("红色为起点、绿色为终点、黑色为障碍点，平台具体方法请点击帮助手册查看！")
-        self.pushButton_new.setText(_translate("MainWindow", "开始规划"))
-        self.pushButton_3.setText(_translate("MainWindow", "清空起始点"))
+        self.pushButton_new.setText(_translate("MainWindow", "获取图形"))
+        self.pushButton_3.setText(_translate("MainWindow", "地图栅格化"))
         # self.checkBox.setText(_translate("MainWindow", "AStar算法"))
         self.menu.setTitle(_translate("MainWindow", "文件"))
         self.menu_5.setTitle(_translate("MainWindow", "关于"))
@@ -293,6 +300,7 @@ class Ui_MainWindow(object):
         self.pushButton_4.setText(_translate("MainWindow", "生成"))
         self.pushButton_5.setText(_translate("MainWindow", "随机障碍物"))
         self.pushButton_6.setText(_translate("MainWindow", "随机起始点"))
+        self.pushButton_7.setText(_translate("MainWindow", "开始规划"))
         self.combo_arithmetic.setItemText(0, _translate("MainWindow", "请选择算法"))
         self.combo_arithmetic.setItemText(1, _translate("MainWindow", "Astar"))
         self.combo_arithmetic.setItemText(2, _translate("MainWindow", "RRT"))
@@ -332,27 +340,6 @@ class Ui_MainWindow(object):
             pw.painting_end(keyx_2, keyy_2)
         else:
             print("坐标格式不正确")
-
-    # 点击随机生成障碍物按钮
-    def block_click(self):
-        coordinate = self.text_input.text()
-        pattern = r"\((\d+),(\d+)\)"  # 匹配坐标的正则表达式模式
-        match = re.match(pattern, coordinate)
-        keyx = int(match.group(1))  # 提取横坐标
-        keyy = int(match.group(2))  # 提取纵坐标
-        # 引用上一个类的函数
-        coordinate_2 = self.text_input_2.text()
-        # print(coordinate_2)
-        pattern_2 = r"\((\d+),(\d+)\)"  # 匹配坐标的正则表达式模式
-        match_2 = re.match(pattern, coordinate_2)
-        keyx_2 = int(match_2.group(1))  # 提取横坐标
-        keyy_2 = int(match_2.group(2))  # 提取纵坐标
-        pw.random_obstacles(keyx, keyy, keyx_2, keyy_2)
-        # for _ in range(250):  # 随机选择若干个格子变黑
-        #     row = random.randint(0, self.grid_widget.rows - 1)
-        #     col = random.randint(0, self.grid_widget.columns - 1)
-        #     label = self.grid_widget.layout().itemAtPosition(row, col).widget()
-        #     label.setStyleSheet("background-color: black")
 
     def openArithmeticList(self):
         self.algorithm_list = AlgorithmList()
