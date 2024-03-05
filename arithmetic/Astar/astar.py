@@ -1,5 +1,6 @@
 # 姓名：高翔
 # 2024/1/29 11:40
+import math
 import time
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout
 from .Node import point
@@ -8,9 +9,9 @@ import pygame
 
 class astar:  # 核心部分，寻路类
     def __init__(self, mapdata):
-        self.start = point(mapdata.start_point[0],mapdata.start_point[1])  # 储存此次搜索的开始点
-        self.end = point(mapdata.end_point[0],mapdata.end_point[1])  # 储存此次搜索的目的点
-        #self.Map = mapdata.map  # 一个二维数组，为此次搜索的地图引用
+        self.start = point(mapdata.start_point[0], mapdata.start_point[1])  # 储存此次搜索的开始点
+        self.end = point(mapdata.end_point[0], mapdata.end_point[1])  # 储存此次搜索的目的点
+        # self.Map = mapdata.map  # 一个二维数组，为此次搜索的地图引用
         self.open = []  # 开放列表：储存即将被搜索的节点
         self.close = []  # 关闭列表：储存已经搜索过的节点
         self.result = []  # 当计算完成后，将最终得到的路径写入到此属性中
@@ -19,12 +20,15 @@ class astar:  # 核心部分，寻路类
         # 开始进行初始数据处理
         self.open.append(self.start)
         self.width = mapdata.width
+        self.surface = mapdata.surface
         self.height = mapdata.height
-        #尺寸暂定为1
+        self.radius = mapdata.obs_radius
+        # 尺寸暂定为1
         self.cell_size = 1
         self.obstacles = mapdata.obstacles[0]
-        self.mapdata=mapdata
-        self.screen=mapdata.plan_surface
+        self.mapdata = mapdata
+        self.screen = mapdata.plan_surface
+
     # 将结果保存至txt文本中
 
     # 计算F值
@@ -59,11 +63,24 @@ class astar:  # 核心部分，寻路类
                 l.remove(i)
         nl = []
         for i in l:
-            if (i[0],i[1]) not in self.obstacles:
+            if self.surface.get_at((i[0], i[1])) != (0, 0, 0):
+                #
+                #print(list((i[0], i[1])))
                 nt = point(i[0], i[1])
                 nt.cost = i[2]
                 nl.append(nt)
         return nl
+
+    def distance(self, AS, point2):
+        return math.sqrt((AS[0] - point2[0]) ** 2 + (AS[1] - point2[1]) ** 2)
+
+    def check_circle_obstacles(self, center, radius, obstacles):
+        valid_points = []
+        for obstacle in obstacles:
+            # 检查每个障碍物是否在圆形区域内
+            if self.distance(center, obstacle) <= radius:
+                return False
+        return True
 
     # 此次判断的点周围的可通行点加入到open列表中，如此点已经在open列表中则对其进行判断，如果此次路径得到的F值较之之前的F值更小，
     # 则将其父节点更新为此次判断的点，同时更新F、G值。
@@ -91,13 +108,12 @@ class astar:  # 核心部分，寻路类
     def getEstimate(self, loc):  # H :从点loc移动到终点的预估花费
         return (abs(loc.x - self.end.x) + abs(loc.y - self.end.y)) * 10
 
-
-    def draw(self,current,open,close):
+    def draw(self, current, open, close):
         self.screen.fill((255, 255, 255))
-        path=[current]
+        path = [current]
         while True:
-            current=current.father
-            if current!=None:
+            current = current.father
+            if current != None:
                 path.append(current)
             else:
                 break
@@ -108,18 +124,19 @@ class astar:  # 核心部分，寻路类
                 tagx = False
                 pygame.draw.rect(self.screen, (0, 100, 255), (k.x, k.y, self.cell_size, self.cell_size), 0)
         if tagx:
-            tag=True
+            tag = True
             for k in open:
-                tag=False
-                pygame.draw.rect(self.screen, (150,0, 0), (k.x, k.y, self.cell_size, self.cell_size), 0)
+                tag = False
+                pygame.draw.rect(self.screen, (150, 0, 0), (k.x, k.y, self.cell_size, self.cell_size), 0)
             if tag:
                 for k in close:
                     pygame.draw.rect(self.screen, (150, 150, 150), (k.x, k.y, self.cell_size, self.cell_size), 0)
                     break
+
     def process(self):  # 使用yield将process方法变成一个生成器，可以逐步的对搜索过程进行处理并返回关键数据
         start = time.time()
-        print("起点为",self.start)
-        print("障碍物",self.obstacles)
+        print("起点为", self.start)
+        print("障碍物", self.obstacles)
         while True:
             self.count += 1
             tar = self.F_Min()  # 先获取open列表中F值最低的点tar
@@ -140,21 +157,21 @@ class astar:  # 核心部分，寻路类
                         if e == None:
                             break
                         self.result.append(e)
-                    #self.mapdata.paintAstar(self.open,self.close)
-                        #self.save()
-                        # print(result)
+                    # self.mapdata.paintAstar(self.open,self.close)
+                    # self.save()
+                    # print(result)
                     # yield (tar, self.open, self.close)
                     break
-            #self.draw(tar, self.open, self.close)
-            #self.mapdata.paintAstar(self.open, self.close)
-            #time.sleep(1)  # 暂停
+            # self.draw(tar, self.open, self.close)
+            # self.mapdata.paintAstar(self.open, self.close)
+            # time.sleep(1)  # 暂停
         end = time.time()
         print("花费时间为")
-        print(end-start)
+        print(end - start)
         return self.result
-            # self.repaint()
-            # print('返回')
+        # self.repaint()
+        # print('返回')
 
-            # yield (tar, self.open, self.close)
-            # time.sleep(1)  # 暂停
+        # yield (tar, self.open, self.close)
+        # time.sleep(1)  # 暂停
         # self.useTime = time2 - time1

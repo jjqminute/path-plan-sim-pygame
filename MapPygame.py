@@ -68,7 +68,7 @@ class PygameWidget(QWidget):
     OBS_RADIUS = 5
     WIDTH = 920
     HEIGHT = 390
-    CELL_SIZE = 20
+    CELL_SIZE = 10
 
     def __init__(self, main_window, parent=None):
         super(PygameWidget, self).__init__(parent)
@@ -133,14 +133,14 @@ class PygameWidget(QWidget):
 
     def startPath(self):
         self.result = None
-        self.obs_surface.fill(PygameWidget.BACK_COLOR)
+        #self.obs_surface.fill(PygameWidget.BACK_COLOR)
         self.search = astar(self)
         self.result = self.search.process()
 
         if self.result is not None:
             for k in self.result:
 
-                pygame.draw.circle(self.plan_surface,(0,100,255),(k.x,k.y),self.obs_radius)
+                pygame.draw.circle(self.plan_surface,(0,100,255),(k.x,k.y),3)
                 #time.sleep(0.1)
 
         # self.plan_surface=self.search.process()()[1]
@@ -320,8 +320,13 @@ class PygameWidget(QWidget):
     def paintEvent(self, event):
 
         self.surface.fill(PygameWidget.BACK_COLOR)
-        self.surface.blit(self.obs_surface, (0, 0))
+        # if(len(self.obstacles)!=0):
+        #     #print(self.obstacles)
+        #     for obstacle in self.obstacles[0]:
+        #         pygame.draw.circle(self.obs_surface, (0, 0, 0), (obstacle[0], obstacle[1]), self.obs_radius)
         self.surface.blit(self.plan_surface, (0, 0))
+        self.surface.blit(self.obs_surface, (0, 0))
+
         # 将pygame surface转换为QImage
         surface_string = pygame.image.tostring(self.surface, 'RGB')
         # width, height = self.surface.get_size()
@@ -348,7 +353,7 @@ class PygameWidget(QWidget):
                               y * self.cell_size:(y + 1) * self.cell_size]
 
                 # 检查像素块中是否存在非白色像素（障碍物）
-                if numpy.any(numpy.any(pixel_block != list(self.back_color), axis=2)):
+                if numpy.any(numpy.any(pixel_block == list(self.obs_color), axis=2)):
                     self.grid_map[x, y] = 1  # 标记为障碍物
                     rect = pygame.Rect(x * self.cell_size, y * self.cell_size, self.cell_size,
                                        self.cell_size)
@@ -478,7 +483,7 @@ class PygameWidget(QWidget):
     def get_obs_vertices(self):
         capture_bgr = surface_to_cv_bgr(self.obs_surface)
         capture_gray = cv2.cvtColor(capture_bgr, cv2.COLOR_BGR2GRAY)
-        _, binary = cv2.threshold(capture_gray, 254, 255, cv2.THRESH_BINARY_INV)
+        _, binary = cv2.threshold(capture_gray, 50, 255, cv2.THRESH_BINARY_INV)
         contours, hierarchy = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         # for obs in contours:
