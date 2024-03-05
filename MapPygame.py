@@ -63,7 +63,7 @@ class PygameWidget(QWidget):
     OBS_RADIUS = 5
     WIDTH = 920
     HEIGHT = 390
-    CELL_SIZE = 50
+    CELL_SIZE = 10
 
     def __init__(self, main_window, parent=None):
         super(PygameWidget, self).__init__(parent)
@@ -80,6 +80,8 @@ class PygameWidget(QWidget):
         # 设置障碍物颜色
         self.obs_color = PygameWidget.OBS_COLOR
 
+        self.grid_color = PygameWidget.OBS_COLOR
+
         # 设置障碍物画笔半径
         self.obs_radius = PygameWidget.OBS_RADIUS
 
@@ -88,11 +90,18 @@ class PygameWidget(QWidget):
         self.obs_surface = pygame.Surface((self.width, self.height))
         self.plan_surface = pygame.Surface((self.width, self.height))
 
+        self.grid_surface = pygame.Surface((self.width, self.height))
+
         # 设置障碍物平面和路径规划平面的透明色
         self.obs_surface.set_colorkey(self.back_color)
         self.plan_surface.set_colorkey(self.back_color)
+
+        self.grid_surface.set_colorkey(self.back_color)
+
         self.obs_surface.fill(self.back_color)
         self.plan_surface.fill(self.back_color)
+
+        self.grid_surface.fill(self.back_color)
 
         # 栅格大小
         self.cell_size = PygameWidget.CELL_SIZE
@@ -123,6 +132,7 @@ class PygameWidget(QWidget):
         # 初始化状态
         self.drawing = False
         self.last_pos = None
+        self.grid = False
 
         self.main_window = main_window
 
@@ -154,13 +164,13 @@ class PygameWidget(QWidget):
                 if obstacle[0] != obstacle[-1]:
                     obstacle.append(obstacle[0])
                 features.append(
-                    geojson.Feature(geometry=geojson.Polygon([obstacle]), properties={"name": "障碍物"}))
+                    geojson.Feature(geometry=geojson.Polygon([obstacle]), properties={"name": "obstacle"}))
 
         if self.start_point is not None and self.end_point is not None:
             start_point = Point(self.start_point)
             end_point = Point(self.end_point)
-            features.append(Feature(geometry=start_point, properties={"name": "起始点"}))
-            features.append(Feature(geometry=end_point, properties={"name": "终点"}))
+            features.append(Feature(geometry=start_point, properties={"name": "start point"}))
+            features.append(Feature(geometry=end_point, properties={"name": "goal point"}))
 
         feature_collection = FeatureCollection(features)
 
@@ -208,21 +218,24 @@ class PygameWidget(QWidget):
         for feature in geojson_obj['features']:
             geometry = feature['geometry']
             properties = feature['properties']
-            if geometry['type'] == 'Point' and properties['name'] == "\u8d77\u59cb\u70b9":
+            if geometry['type'] == 'Point' and properties['name'] == "start point":
                 self.start_point = geometry['coordinates']
-            if geometry['type'] == 'Point' and properties['name'] == "\u7ec8\u70b9":
+            if geometry['type'] == 'Point' and properties['name'] == "goal point":
                 self.end_point = geometry['coordinates']
             elif geometry['type'] == 'Polygon':
+                # for contour in geometry['coordinates']:
+
                 obstacles.append(geometry['coordinates'][0])
 
         self.obstacles = obstacles
 
         # print(obstacles)
+        self.update_obs_surface()
 
-        self.obs_surface.fill(self.back_color)
-
-        for obs in obstacles:
-            pygame.draw.polygon(self.obs_surface, PygameWidget.OBS_COLOR, obs)
+        # self.obs_surface.fill(self.back_color)
+        #
+        # for obs in obstacles:
+        #     pygame.draw.polygon(self.obs_surface, PygameWidget.OBS_COLOR, obs)
 
         # screen = pygame.Surface((self.width, self.height))
         #
@@ -285,13 +298,13 @@ class PygameWidget(QWidget):
         #             self.obstacles.append((x, y))
         #             self.map[x // self.cell_size][y // self.cell_size - 1] = 1
         #             print(self.map)
-        #             self.win_main.printf("设置障碍物", x // self.cell_size, y // self.cell_size)
+        #             self.main_window.printf("设置障碍物", x // self.cell_size, y // self.cell_size)
         #             self.update()
         #         else:
         #             self.obstacles.remove((x, y))
         #             self.map[x // self.cell_size][y // self.cell_size - 1] = 0
         #             print(self.map)
-        #             self.win_main.printf("取消障碍物", x // self.cell_size, y // self.cell_size)
+        #             self.main_window.printf("取消障碍物", x // self.cell_size, y // self.cell_size)
         #             self.update()
         # elif event.button() == Qt.RightButton:  # 鼠标右键
         #     # 将鼠标点击的位置对齐到网格上
@@ -301,13 +314,13 @@ class PygameWidget(QWidget):
         #         if (x, y) not in self.obstacles:
         #             self.start_point = (x, y)
         #             print(self.start_point)
-        #             self.win_main.printf("设置起点", x // self.cell_size, y // self.cell_size)
+        #             self.main_window.printf("设置起点", x // self.cell_size, y // self.cell_size)
         #     else:
         #         if self.start_point != (x, y) and self.end_point is None:
         #             if (x, y) not in self.obstacles:
         #                 self.end_point = (x, y)
         #                 print(self.end_point)
-        #                 self.win_main.printf("设置终点", x // self.cell_size, y // self.cell_size)
+        #                 self.main_window.printf("设置终点", x // self.cell_size, y // self.cell_size)
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -320,6 +333,8 @@ class PygameWidget(QWidget):
         self.surface.fill(PygameWidget.BACK_COLOR)
         self.surface.blit(self.obs_surface, (0, 0))
         self.surface.blit(self.plan_surface, (0, 0))
+        if self.grid:
+            self.surface.blit(self.grid_surface, (0, 0))
 
         # # 绘制障碍物
         # for obstacle in self.obstacles:
@@ -364,6 +379,13 @@ class PygameWidget(QWidget):
                                        self.cell_size)
                     pygame.draw.rect(self.obs_surface, self.obs_color, rect)
 
+        for y in range(self.rows + 1):
+            pygame.draw.line(self.grid_surface, self.grid_color, (0, y * self.cell_size), (self.width, y * self.cell_size))
+        for x in range(self.cols + 1):
+            pygame.draw.line(self.grid_surface, self.grid_color, (x * self.cell_size, 0), (x * self.cell_size, self.height))
+
+        self.grid = True
+
     # 画起始点
     def painting_ori(self, x, y):
         # 绘画起点 这个和点击画起始点功能冲突 暂时分隔这两个功能，假设输入起始点前地图为空，所以直接填色即可
@@ -374,7 +396,7 @@ class PygameWidget(QWidget):
         screen.fill(PygameWidget.WHITE)
 
         self.start_point = (x, y)
-        self.win_main.printf("设置起点", x, y)
+        self.main_window.printf("设置起点", x, y)
         if self.start_point:
             pygame.draw.rect(screen, (0, 255, 0),
                              (self.start_point[0], self.start_point[1], self.cell_size, self.cell_size), 0)
@@ -398,7 +420,7 @@ class PygameWidget(QWidget):
         screen.fill(PygameWidget.WHITE)
 
         self.end_point = (x1, y1)
-        self.win_main.printf("设置终点", x1, y1)
+        self.main_window.printf("设置终点", x1, y1)
         if self.end_point:
             pygame.draw.rect(screen, (255, 0, 0),
                              (self.end_point[0], self.end_point[1], self.cell_size, self.cell_size), 0)
@@ -455,42 +477,42 @@ class PygameWidget(QWidget):
             self.obstacles.append(coordinates)
         self.paint_block(x1, y1, x2, y2)
 
-    def paint_block(self, x1, y1, x2, y2):
-
-        screen = pygame.Surface((self.width, self.height))
-
-        # 设置背景颜色
-        screen.fill(PygameWidget.WHITE)
-
-        for obstacle in self.obstacles:
-            pygame.draw.rect(screen, (0, 0, 0), (obstacle[0], obstacle[1], self.cell_size, self.cell_size), 0)
-
-        # 将pygame surface转换为QImage
-        image = QImage(screen.get_buffer(), self.width, self.height, QImage.Format_RGB32)
-
-        # 将QImage转换为QPixmap
-        pixmap = QPixmap.fromImage(image)
-
-        # 使用QPainter绘制pixmap
-        painter = QPainter(self)
-        painter.drawPixmap(0, 0, pixmap)
-        painter.end()
-        # grid_widget.paint_block(x1, y1, x2, y2)
+    # def paint_block(self, x1, y1, x2, y2):
+    #
+    #     screen = pygame.Surface((self.width, self.height))
+    #
+    #     # 设置背景颜色
+    #     screen.fill(PygameWidget.WHITE)
+    #
+    #     for obstacle in self.obstacles:
+    #         pygame.draw.rect(screen, (0, 0, 0), (obstacle[0], obstacle[1], self.cell_size, self.cell_size), 0)
+    #
+    #     # 将pygame surface转换为QImage
+    #     image = QImage(screen.get_buffer(), self.width, self.height, QImage.Format_RGB32)
+    #
+    #     # 将QImage转换为QPixmap
+    #     pixmap = QPixmap.fromImage(image)
+    #
+    #     # 使用QPainter绘制pixmap
+    #     painter = QPainter(self)
+    #     painter.drawPixmap(0, 0, pixmap)
+    #     painter.end()
+    #     # grid_widget.paint_block(x1, y1, x2, y2)
 
     # 修改地图分辨率
     def modifyMap(self, size):
         if self.start_point is None and self.end_point is None and len(self.obstacles) == 0:
             if not isinstance(size, str):
-                self.win_main.printf("请输入正确的分辨率！", None, None)
+                self.main_window.printf("请输入正确的分辨率！", None, None)
                 if int(size) > 0:
                     new_size = int(size)
                     self.cell_size = new_size
                     self.update()
-                    self.win_main.printf("分辨率调整成功！", None, None)
+                    self.main_window.printf("分辨率调整成功！", None, None)
                 else:
-                    self.win_main.printf("请输入正确的分辨率！", None, None)
+                    self.main_window.printf("请输入正确的分辨率！", None, None)
         else:
-            self.win_main.printf("当前地图已起始点或障碍点不可调整地图分辨率，请清空地图后再次调整分辨率！", None, None)
+            self.main_window.printf("当前地图已起始点或障碍点不可调整地图分辨率，请清空地图后再次调整分辨率！", None, None)
 
     # 随机起始点方法
     def generateRandomStart(self):
@@ -500,10 +522,10 @@ class PygameWidget(QWidget):
             y = random.choice(range(0, self.height - 1, 5))
             if (x, y) not in self.obstacles:
                 self.start_point = (x, y)
-                self.win_main.printf("添加起始点：", x, y)
+                self.main_window.printf("添加起始点：", x, y)
                 self.update()
         else:
-            self.win_main.printf("error: 已经设置起点！", None, None)
+            self.main_window.printf("error: 已经设置起点！", None, None)
 
         if self.end_point is None and self.end_point != self.start_point:
             # 生成随机的x和y坐标
@@ -511,25 +533,31 @@ class PygameWidget(QWidget):
             y_1 = random.choice(range(0, self.height - 1, 5))
             if (x_1, y_1) not in self.obstacles:
                 self.end_point = (x_1, y_1)
-                self.win_main.printf("添加终点：", y_1, x_1)
+                self.main_window.printf("添加终点：", y_1, x_1)
                 self.update()
         else:
-            self.win_main.printf("error: 已经设置终点！", None, None)
+            self.main_window.printf("error: 已经设置终点！", None, None)
         self.update()
 
+    def update_obs_surface(self):
+        self.obs_surface.fill(self.back_color)
+        for obs in self.obstacles:
+            pygame.draw.polygon(self.obs_surface, self.obs_color, obs)
+
     # 清空地图方法
-    def clear_map(self):
-        self.start_point = None  # 清除起点
-        self.end_point = None  # 清除终点
+    def clear_obstacles(self):
+        # self.start_point = None  # 清除起点
+        # self.end_point = None  # 清除终点
         self.obstacles = []  # 清空障碍物列表
-        self.win_main.printf("已经清空地图", None, None)
-        self.update()  # 更新界面
+        self.update_obs_surface()
+        self.main_window.printf("已经清空地图", None, None)
+        # self.update()  # 更新界面
 
     # 清空地图起始点
     def clearStartAndEnd(self):
         self.start_point = None  # 清除起点
         self.end_point = None  # 清除终点
-        self.win_main.printf("已经清空起始点", None, None)
+        self.main_window.printf("已经清空起始点", None, None)
         self.update()  # 更新界面
 
     def get_obs_vertices(self):
@@ -546,7 +574,7 @@ class PygameWidget(QWidget):
 
         for obs in contours:
             obstacle = obs.squeeze().tolist()
-            pygame.draw.polygon(self.obs_surface, PygameWidget.OBS_COLOR, obstacle)
+            pygame.draw.polygon(self.obs_surface, self.obs_color, obstacle)
             self.obstacles.append(obstacle)
 
         # print(self.obstacles)

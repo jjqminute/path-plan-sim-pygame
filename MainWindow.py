@@ -62,7 +62,7 @@ class Ui_MainWindow(object):
         self.pushButton_3.clicked.connect(self.grid_widget.rasterize_map)
 
         # 清楚所有障碍方法链接
-        self.pushButton.clicked.connect(grid_widget.clear_map)
+        self.pushButton.clicked.connect(grid_widget.clear_obstacles)
         # self.checkBox = QtWidgets.QCheckBox(self.centralwidget)
         # self.checkBox.setGeometry(QtCore.QRect(310, 450, 71, 21))
         # self.checkBox.setObjectName("checkBox")
@@ -221,7 +221,6 @@ class Ui_MainWindow(object):
     def openNewWindow(self):
         new_window = QtWidgets.QMainWindow()
         ui = Ui_MainWindow()
-        grid_widget = GridWidget(ui)
         pw = PygameWidget(ui)
         ui.setupUi(new_window, pw)
 
