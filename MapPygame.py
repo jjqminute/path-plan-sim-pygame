@@ -1,5 +1,8 @@
 import math
+import re
 import sys
+import time
+
 import pygame
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QFileDialog
 from PyQt5.QtWidgets import QFrame
@@ -14,6 +17,9 @@ import shapely.geometry
 # import geopandas as gpd
 import cv2
 import numpy
+from arithmetic.Astar.Map import Map
+from arithmetic.Astar.astar import astar
+from arithmetic.RRT.rrt import rrt
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -135,7 +141,70 @@ class PygameWidget(QWidget):
         self.grid = False
 
         self.main_window = main_window
+        # 矩形初始位置和大小
+        self.rect_size = 50
+        self.rect_newsize = 50
+        self.rect = pygame.Rect(100, 100, self.rect_size, self.rect_size)
 
+        self.circle_center = (30, 30)
+        self.circle_radius = 30
+        self.circle_newradius = 30
+
+        self.elli_center = (30, 90)
+        self.elli_width = 50
+        self.elli_newwidth = 50
+        self.elli_newheight = 100
+        self.elli_height = 100
+        self.elli_points = []
+        self.elli_newpoints = []
+
+        self.dia_center = (30, 30)
+        self.dia_size = 60
+        self.dia_vertices = []
+        self.dia_newsize = 60
+        self.dia_newvertices = []
+
+        self.star_center = (30, 30)
+        self.star_points = []
+        self.star_newpoints = []
+        self.star_outer_radius = 40
+        self.star_newouter_radius = 40
+
+        self.tri_center = (60, 60)
+        self.tri_size = 100
+        self.tri_newsize = 100
+        self.tri_vertices = []
+        self.tri_newvertices = []
+
+        self.angle = 2 * math.pi / 5  # 五角星的内角
+        self.dragging = False
+        self.offset_x = 0
+        self.offset_x = 0
+        self.result = None
+
+    def startAstar(self):
+        self.result = None
+        #self.obs_surface.fill(PygameWidget.BACK_COLOR)
+        self.search = astar(self)
+        self.result = self.search.process()
+
+        if self.result is not None:
+            for k in self.result:
+
+                pygame.draw.circle(self.plan_surface,(0,100,255),(k.x,k.y),3)
+                #time.sleep(0.1)
+    def startRtt(self):
+        self.result = None
+        self.search = rrt(self)
+        self.result = self.search.plan()
+        if self.result is not None:
+            for k in self.result:
+                pygame.draw.circle(self.plan_surface,(0,100,255),(k.x,k.y),3)
+        if self.result is not None:
+            for k in range(len(self.result) - 1):
+                pygame.draw.line(self.plan_surface, (0, 100, 255), (self.result[k].x, self.result[k].y),
+                                 (self.result[k + 1].x, self.result[k + 1].y), 3)
+        # self.plan_surface=self.search.process()()[1]
     def save_map(self):
         # 创建文件对话框
         dialog = QFileDialog()
@@ -313,6 +382,36 @@ class PygameWidget(QWidget):
         painter.drawPixmap(0, 0, pixmap)
         painter.end()
 
+    # 输入始末点坐标
+    def ori_end_input(self, ):  # 输入起始点终点函数
+        # print("111111111111111111111111111")
+        coordinate = self.main_window.text_input.text()
+        print(coordinate)
+        pattern = r"\((\d+),(\d+)\)"  # 匹配坐标的正则表达式模式
+        match = re.match(pattern, coordinate)
+        # print(match)
+        if match:
+            keyx = int(match.group(1))  # 提取横坐标
+            keyy = int(match.group(2))  # 提取纵坐标
+            print("起点横坐标:", keyx)
+            print("起点纵坐标:", keyy)
+            self.painting_ori(keyx, keyy)
+        else:
+            print("坐标格式不正确")
+        coordinate_2 = self.main_window.text_input_2.text()
+        # print(coordinate_2)
+        pattern_2 = r"\((\d+),(\d+)\)"  # 匹配坐标的正则表达式模式
+        match_2 = re.match(pattern, coordinate_2)
+        if match_2:
+            # global keyx_2, keyy_2
+            keyx_2 = int(match_2.group(1))  # 提取横坐标
+            keyy_2 = int(match_2.group(2))  # 提取纵坐标
+            print("终点横坐标:", keyx_2)
+            print("终点纵坐标:", keyy_2)
+            self.painting_end(keyx_2, keyy_2)
+        else:
+            print("坐标格式不正确")
+
     # 栅格化地图
     def rasterize_map(self):
 
@@ -352,26 +451,31 @@ class PygameWidget(QWidget):
     def painting_ori(self, x, y):
         # 绘画起点 这个和点击画起始点功能冲突 暂时分隔这两个功能，假设输入起始点前地图为空，所以直接填色即可
         # 创建一个新的surface
-        screen = pygame.Surface((self.width, self.height))
-
-        # 设置背景颜色
-        screen.fill(PygameWidget.WHITE)
-
+        # screen = pygame.Surface((self.width, self.height))
+        #
+        # # 设置背景颜色
+        # screen.fill(PygameWidget.WHITE)
+        #
+        # self.start_point = (x, y)
+        # self.win_main.printf("设置起点", x, y)
+        # if self.start_point:
+        #     pygame.draw.rect(screen, (0, 255, 0),
+        #                      (self.start_point[0], self.start_point[1], self.cell_size, self.cell_size), 0)
+        #     image = QImage(screen.get_buffer(), self.width, self.height, QImage.Format_RGB32)
+        #
+        #     # 将QImage转换为QPixmap
+        #     pixmap = QPixmap.fromImage(image)
+        #
+        #     # 使用QPainter绘制pixmap
+        #     painter = QPainter(self)
+        #     painter.drawPixmap(0, 0, pixmap)
+        #     painter.end()
+        #     # grid_widget.painting_ori(x,y)
         self.start_point = (x, y)
         self.main_window.printf("设置起点", x, y)
         if self.start_point:
-            pygame.draw.rect(screen, (0, 255, 0),
-                             (self.start_point[0], self.start_point[1], self.cell_size, self.cell_size), 0)
-            image = QImage(screen.get_buffer(), self.width, self.height, QImage.Format_RGB32)
-
-            # 将QImage转换为QPixmap
-            pixmap = QPixmap.fromImage(image)
-
-            # 使用QPainter绘制pixmap
-            painter = QPainter(self)
-            painter.drawPixmap(0, 0, pixmap)
-            painter.end()
-            # grid_widget.painting_ori(x,y)
+            pygame.draw.circle(self.obs_surface, (0, 255, 0), (x, y), self.obs_radius)
+            self.update()
 
     def painting_end(self, x1, y1):
         # 绘画终点 假设输入终止点前地图为空，所以直接填色即可
@@ -379,23 +483,28 @@ class PygameWidget(QWidget):
         screen = pygame.Surface((self.width, self.height))
 
         # 设置背景颜色
-        screen.fill(PygameWidget.WHITE)
-
+        # screen.fill(PygameWidget.WHITE)
+        #
+        # self.end_point = (x1, y1)
+        # self.win_main.printf("设置终点", x1, y1)
+        # if self.end_point:
+        #     pygame.draw.rect(screen, (255, 0, 0),
+        #                      (self.end_point[0], self.end_point[1], self.cell_size, self.cell_size), 0)
+        #     image = QImage(screen.get_buffer(), self.width, self.height, QImage.Format_RGB32)
+        #
+        #     # 将QImage转换为QPixmap
+        #     pixmap = QPixmap.fromImage(image)
+        #
+        #     # 使用QPainter绘制pixmap
+        #     painter = QPainter(self)
+        #     painter.drawPixmap(0, 0, pixmap)
+        #     painter.end()
+        #     # grid_widget.painting_end(x1,y1)
         self.end_point = (x1, y1)
         self.main_window.printf("设置终点", x1, y1)
         if self.end_point:
-            pygame.draw.rect(screen, (255, 0, 0),
-                             (self.end_point[0], self.end_point[1], self.cell_size, self.cell_size), 0)
-            image = QImage(screen.get_buffer(), self.width, self.height, QImage.Format_RGB32)
-
-            # 将QImage转换为QPixmap
-            pixmap = QPixmap.fromImage(image)
-
-            # 使用QPainter绘制pixmap
-            painter = QPainter(self)
-            painter.drawPixmap(0, 0, pixmap)
-            painter.end()
-            # grid_widget.painting_end(x1,y1)
+            pygame.draw.circle(self.obs_surface, (255, 0, 0), (x1, y1), self.obs_radius)
+            self.update()
 
     # 修改地图分辨率[OK]
     def modifyMap(self, size):
@@ -503,7 +612,48 @@ class PygameWidget(QWidget):
         # print(hierarchy)
 
         # return contours
-
+    # 随机图形障碍物
+    def paint_random_one(self):
+        current_index = self.main_window.combo_arithmetic_obs.currentIndex()
+        if current_index == 1:
+            pygame.draw.rect(self.obs_surface, BLACK, (100, 100, self.rect_size, self.rect_size))
+        elif current_index == 2:
+            pygame.draw.circle(self.obs_surface, BLACK, self.circle_center, self.circle_radius, 0)
+        elif current_index == 3:
+            # 三角形
+            height = self.tri_size * math.sqrt(3) / 2
+            # 计算顶点坐标
+            self.tri_vertices = [
+                (self.tri_center[0], self.tri_center[1] - self.tri_size / 2),  # 上方顶点
+                (self.tri_center[0] - self.tri_size / 2, self.tri_center[1] + height),  # 左下顶点
+                (self.tri_center[0] + self.tri_size / 2, self.tri_center[1] + height)  # 右下顶点
+            ]
+            pygame.draw.polygon(self.obs_surface, BLACK, self.tri_vertices)
+        elif current_index == 4:
+            # 椭圆
+            for i in range(360):
+                angle_rad = math.radians(i)
+                x = self.elli_center[0] + self.elli_width / 2 * math.cos(angle_rad)
+                y = self.elli_center[0] + self.elli_height / 2 * math.sin(angle_rad)
+                self.elli_points.append((int(x), int(y)))
+                # 绘制多边形
+            pygame.draw.polygon(self.obs_surface, BLACK, self.elli_points)  # 随机多边形障碍物
+        elif current_index == 5:
+            # 绘制菱形
+            half_size = self.dia_size // 2
+            a = math.sqrt(2) * half_size
+            self.dia_vertices = [(self.dia_center[0] - half_size, self.dia_center[1] - half_size),
+                                 (self.dia_center[0] + half_size, self.dia_center[1] - half_size),
+                                 (self.dia_center[0] + a, self.dia_center[1] + a),
+                                 (self.dia_center[0] - a, self.dia_center[1] + a)]
+            pygame.draw.polygon(self.obs_surface, BLACK, self.dia_vertices)
+        elif current_index == 6:
+            # 绘制五角星
+            for i in range(5):
+                x = self.star_center[0] + self.star_outer_radius * math.cos(i * self.angle)
+                y = self.star_center[1] + self.star_outer_radius * math.sin(i * self.angle)
+                self.star_points.append((int(x), int(y)))
+            pygame.draw.polygon(self.obs_surface, BLACK, self.star_points)
     #  随机多边形障碍物
     def random_graph(self, count):
         for _ in range(count):
