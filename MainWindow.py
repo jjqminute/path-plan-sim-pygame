@@ -82,6 +82,17 @@ class Ui_MainWindow(object):
         self.combo_arithmetic.addItem("")
         self.combo_arithmetic.addItem("")
         self.combo_arithmetic.addItem("")
+        # 选择障碍物图形
+        self.combo_arithmetic_obs = QtWidgets.QComboBox(self.centralwidget)
+        self.combo_arithmetic_obs.setGeometry(QtCore.QRect(830, 455, 100, 25))
+        self.combo_arithmetic_obs.setObjectName("combo_arithmetic_obs")
+        self.combo_arithmetic_obs.addItem("")
+        self.combo_arithmetic_obs.addItem("")
+        self.combo_arithmetic_obs.addItem("")
+        self.combo_arithmetic_obs.addItem("")
+        self.combo_arithmetic_obs.addItem("")
+        self.combo_arithmetic_obs.addItem("")
+        self.combo_arithmetic_obs.addItem("")
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -188,7 +199,11 @@ class Ui_MainWindow(object):
         self.actionhelp.triggered.connect(self.helpInfo)
         self.actionmodel = QtWidgets.QAction(MainWindow)
         self.actionmodel.setObjectName("actionmodel")
-
+        # 生成单个图形障碍物可控大小
+        self.pushButton_paint_rand = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_paint_rand.setGeometry(QtCore.QRect(730, 454, 80, 25))
+        self.pushButton_paint_rand.setObjectName("pushButton_paint_rand")
+        self.pushButton_paint_rand.clicked.connect(self.grid_widget.paint_random_one)
         # 下载地图模板
         # self.actionmodel.triggered.connect(grid_widget.downLoadModelMap)
         self.actionArithmeticList = QtWidgets.QAction(MainWindow)
@@ -307,7 +322,14 @@ class Ui_MainWindow(object):
         self.combo_arithmetic.setItemText(2, _translate("MainWindow", "RRT"))
         self.combo_arithmetic.setItemText(3, _translate("MainWindow", "Dijkstra"))
         self.combo_arithmetic.setItemText(4, _translate("MainWindow", "4"))
-
+        self.combo_arithmetic_obs.setItemText(0, _translate("MainWindow", "图形障碍物"))
+        self.combo_arithmetic_obs.setItemText(1, _translate("MainWindow", "矩形"))
+        self.combo_arithmetic_obs.setItemText(2, _translate("MainWindow", "圆形"))
+        self.combo_arithmetic_obs.setItemText(3, _translate("MainWindow", "三角形"))
+        self.combo_arithmetic_obs.setItemText(4, _translate("MainWindow", "椭圆形"))
+        self.combo_arithmetic_obs.setItemText(5, _translate("MainWindow", "菱形"))
+        self.combo_arithmetic_obs.setItemText(6, _translate("MainWindow", "五角形"))
+        self.pushButton_paint_rand.setText(_translate("MainWindow", "图形障碍物"))
     # 路径规划
     def startPath(self):
         # 根据不同的算法

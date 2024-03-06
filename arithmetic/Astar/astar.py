@@ -6,7 +6,6 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout
 from .Node import point
 import pygame
 
-
 class astar:  # 核心部分，寻路类
     def __init__(self, mapdata):
         self.start = point(mapdata.start_point[0], mapdata.start_point[1])  # 储存此次搜索的开始点
@@ -28,7 +27,6 @@ class astar:  # 核心部分，寻路类
         self.obstacles = mapdata.obstacles[0]
         self.mapdata = mapdata
         self.screen = mapdata.plan_surface
-
     # 将结果保存至txt文本中
 
     # 计算F值
