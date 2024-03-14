@@ -1,7 +1,10 @@
 import math
+import time
 from random import random
 
 from .Node import point
+
+
 class rrt:
     def __init__(self, mapdata):
         self.start = point(mapdata.start_point[0], mapdata.start_point[1])
@@ -10,13 +13,13 @@ class rrt:
         self.width = mapdata.width
         self.obstacle = mapdata.obs_surface
         self.height = mapdata.height
-        self.tree=[]
-        self.step=10
-        self.max_iterations=10000;
+        self.tree = []
+        self.step = 30
+        self.max_iterations = 10000;
 
     def rand_point(self):
-        x=random()*self.width
-        y=random()*self.height
+        x = random() * self.width
+        y = random() * self.height
         return point(x, y)
 
     def nearest_neighbor(self, tree, target_point):
@@ -62,7 +65,8 @@ class rrt:
             new_x = nearest_node.x + direction[0] * max_distance
             new_y = nearest_node.y + direction[1] * max_distance
             return point(new_x, new_y)
-    def normalize(self,vx, vy):
+
+    def normalize(self, vx, vy):
         """
         将输入向量标准化，并返回其坐标。
 
@@ -118,7 +122,7 @@ class rrt:
 
         # 3. 从最近节点向随机点扩展
         new_node = self.steer(nearest_node, (random_point.x, random_point.y), max_distance)
-        new_node.father=nearest_node
+        new_node.father = nearest_node
         # 4. 检查是否与障碍物发生碰撞
         if not self.collision((nearest_node.x, nearest_node.y), (new_node.x, new_node.y)):
             # 如果没有碰撞，则将新节点添加到树中
@@ -128,8 +132,8 @@ class rrt:
             # 如果发生碰撞，则返回 None 表示扩展失败
             return None
 
-    def collision(self,src, dst):
-            """
+    def collision(self, src, dst):
+        """
             检查从源点到目标点的线段是否与障碍物发生碰撞。
 
             Args:
@@ -140,15 +144,15 @@ class rrt:
             Returns:
             - collided: 如果发生碰撞，则为 True，否则为 False。
             """
-            vx, vy = self.normalize(dst[0] - src[0], dst[1] - src[1])
-            curr = list(src)
-            while self.dist(curr, dst) > 1:
-                int_curr = int(curr[0]), int(curr[1])
-                if self.obstacle.get_at(int_curr) == (0,0,0):
-                    return True
-                curr[0] += vx
-                curr[1] += vy
-            return False
+        vx, vy = self.normalize(dst[0] - src[0], dst[1] - src[1])
+        curr = list(src)
+        while self.dist(curr, dst) > 1:
+            int_curr = int(curr[0]), int(curr[1])
+            if self.obstacle.get_at(int_curr) == (0, 0, 0):
+                return True
+            curr[0] += vx
+            curr[1] += vy
+        return False
 
     def plan(self):
         """
@@ -162,10 +166,11 @@ class rrt:
         Returns:
         - path: 表示 RRT 算法找到的路径的点列表，如果找不到路径则返回空列表。
         """
+        start = time.time()
         # 使用起始节点初始化树
         tree = [self.start]
-        max_iterations=self.max_iterations
-        max_distance=self.step
+        max_iterations = self.max_iterations
+        max_distance = self.step
         # 执行 RRT 迭代
         for _ in range(max_iterations):
             # 1. 扩展树，添加一个新节点
@@ -178,13 +183,16 @@ class rrt:
                 current_node = new_node
                 print(new_node)
                 while current_node != self.start:
+                    # 最终节点回溯整条路径
                     parent = current_node.father
                     path.append(parent)
                     current_node = parent
                 path.reverse()
+                end = time.time()
+                print("花费时间为")
+                print(end - start)
                 return path
 
         # 如果最大迭代次数后仍未找到路径，则返回空路径
         print("未找到路径！！！")
         return []
-

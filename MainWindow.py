@@ -320,7 +320,7 @@ class Ui_MainWindow(object):
         self.combo_arithmetic.setItemText(0, _translate("MainWindow", "请选择算法"))
         self.combo_arithmetic.setItemText(1, _translate("MainWindow", "Astar"))
         self.combo_arithmetic.setItemText(2, _translate("MainWindow", "RRT"))
-        self.combo_arithmetic.setItemText(3, _translate("MainWindow", "Dijkstra"))
+        self.combo_arithmetic.setItemText(3, _translate("MainWindow", "APF"))
         self.combo_arithmetic.setItemText(4, _translate("MainWindow", "4"))
         self.combo_arithmetic_obs.setItemText(0, _translate("MainWindow", "图形障碍物"))
         self.combo_arithmetic_obs.setItemText(1, _translate("MainWindow", "矩形"))
@@ -339,6 +339,9 @@ class Ui_MainWindow(object):
         elif self.combo_arithmetic.currentText() == "RRT":
             print("启动RRT算法！！！")
             self.grid_widget.startRtt()
+        elif self.combo_arithmetic.currentText() == "APF":
+            print("启动APF算法！！！")
+            self.grid_widget.startApf()
 
     def ori_end_input(self):  # 输入起始点终点函数
         coordinate = self.text_input.text()
