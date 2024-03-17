@@ -173,6 +173,7 @@ class PygameWidget(QWidget):
         self.offset_x = 0
         self.result = None
 
+    # A*算法
     def startAstar(self):
         self.result = None
         #self.obs_surface.fill(PygameWidget.BACK_COLOR)
@@ -181,9 +182,10 @@ class PygameWidget(QWidget):
 
         if self.result is not None:
             for k in self.result:
-
                 pygame.draw.circle(self.plan_surface,(0,100,255),(k.x,k.y),3)
                 #time.sleep(0.1)
+
+    # RRT算法
     def startRtt(self):
         self.result = None
         self.search = rrt(self)
@@ -196,6 +198,8 @@ class PygameWidget(QWidget):
                 pygame.draw.line(self.plan_surface, (0, 100, 255), (self.result[k].x, self.result[k].y),
                                  (self.result[k + 1].x, self.result[k + 1].y), 3)
         # self.plan_surface=self.search.process()()[1]
+
+    # 保存地图文件
     def save_map(self):
         # 创建文件对话框
         dialog = QFileDialog()
@@ -246,6 +250,7 @@ class PygameWidget(QWidget):
         # 关闭文件保存对话框
         # self.win_main.quit()
 
+    # 打开地图文件
     def open_map(self):
         # 创建文件对话框
         dialog = QFileDialog()
@@ -391,6 +396,7 @@ class PygameWidget(QWidget):
         painter = QPainter(self)
         painter.drawPixmap(0, 0, pixmap)
         painter.end()
+
     # 输入始末点坐标
     def ori_end_input(self, ):  # 输入起始点终点函数
         # print("111111111111111111111111111")
@@ -420,6 +426,7 @@ class PygameWidget(QWidget):
             self.painting_end(keyx_2, keyy_2)
         else:
             print("坐标格式不正确")
+
     # 栅格化地图
     def rasterize_map(self):
 
@@ -598,6 +605,7 @@ class PygameWidget(QWidget):
         # print(hierarchy)
 
         # return contours
+
     # 随机图形障碍物
     def paint_random_one(self):
         current_index = self.main_window.combo_arithmetic_obs.currentIndex()
@@ -640,6 +648,7 @@ class PygameWidget(QWidget):
                 y = self.star_center[1] + self.star_outer_radius * math.sin(i * self.angle)
                 self.star_points.append((int(x), int(y)))
             pygame.draw.polygon(self.obs_surface, BLACK, self.star_points)
+
     #  随机多边形障碍物
     def random_graph(self,count):
         for _ in range(count):
@@ -692,7 +701,213 @@ class PygameWidget(QWidget):
                         star_points.append(
                             (x + side_length // 2 + side_length * math.cos(angle), y + side_length * math.sin(angle)))
                 pygame.draw.polygon(self.obs_surface, self.obs_color, star_points)
+            elif shape_type == 3:
+                # 绘制不重叠的椭圆
+                width = random.randrange(20, 81)
+                height = random.randrange(20, 81)
+                x, y = self.get_non_overlapping_position(width, height)
+                pygame.draw.ellipse(self.obs_surface, self.obs_color, (x, y, width, height))
+            elif shape_type == 4:
+                # 绘制不重叠的菱形
+                side_length = random.randrange(20, 81)
+                x, y = self.get_non_overlapping_position(side_length, side_length)
+                diamond_points = [(x + side_length // 2, y), (x + side_length, y + side_length // 2),
+                                  (x + side_length // 2, y + side_length), (x, y + side_length // 2)]
+                pygame.draw.polygon(self.obs_surface, self.obs_color, diamond_points)
+            elif shape_type == 5:
+                # 绘制不重叠的五角星
+                side_length = random.randrange(20, 81)
+                x, y = self.get_non_overlapping_position(side_length, side_length)
+                star_points = []
+                for i in range(5):
+                    angle = i * 2 * math.pi / 5
+                    if i % 2 == 0:
+                        star_points.append((x + side_length // 2 + side_length * math.cos(angle) / 2,
+                                            y + side_length * math.sin(angle) / 2))
+                    else:
+                        star_points.append(
+                            (x + side_length // 2 + side_length * math.cos(angle), y + side_length * math.sin(angle)))
+                pygame.draw.polygon(self.obs_surface, self.obs_color, star_points)
+
         self.main_window.text_result.append("成功生成 %s 个随机障碍物" %count)
+
+    #  随机多边形不重叠障碍物
+    def random_graph_new(self, count):
+        self.clear_map() # 重置地图
+        obstacles = []
+        max_retries = 200 # 障碍物最大寻址次数，保证每个障碍物不重叠
+
+        # 检查一个障碍物是否与障碍物列表中的任何障碍物重叠
+        def is_overlapping(x, y, width, height):
+            for obstacle in obstacles:
+                obstacle_x, obstacle_y, obstacle_width, obstacle_height = obstacle
+                if x < obstacle_x + obstacle_width and x + width > obstacle_x and y < obstacle_y + obstacle_height and y + height > obstacle_y:
+                    return True
+            return False
+
+        # 根据用户输入的数量输出障碍物
+        for _ in range(count):
+            retries = 0
+            while retries < max_retries:
+                shape_type = random.randrange(4)
+                if shape_type == 0:
+                    radius = random.randrange(10, 51)
+                    x = random.randrange(radius, self.width - radius)
+                    y = random.randrange(radius, self.height - radius)
+                    if not is_overlapping(x - radius, y - radius, 2 * radius, 2 * radius):
+                        obstacles.append((x - radius, y - radius, 2 * radius, 2 * radius))
+                        pygame.draw.circle(self.obs_surface, self.obs_color, (x, y), radius)
+                        break
+                elif shape_type == 1:
+                    width = random.randrange(20, 81)
+                    height = random.randrange(20, 81)
+                    x = random.randrange(0, self.width - width)
+                    y = random.randrange(0, self.height - height)
+                    if not is_overlapping(x, y, width, height):
+                        obstacles.append((x, y, width, height))
+                        pygame.draw.rect(self.obs_surface, self.obs_color, (x, y, width, height))
+                        break
+                # 添加椭圆形障碍物生成逻辑
+                elif shape_type == 2:
+                    width = random.randrange(20, 81)
+                    height = random.randrange(20, 81)
+                    x = random.randrange(0, self.width - width)
+                    y = random.randrange(0, self.height - height)
+                    if not is_overlapping(x, y, width, height):
+                        obstacles.append((x, y, width, height))
+                        pygame.draw.ellipse(self.obs_surface, self.obs_color, (x, y, width, height))
+                        break
+                # 添加正菱形障碍物生成逻辑
+                elif shape_type == 3:
+                    side_length = random.randrange(20, 81)
+                    x = random.randrange(0, self.width - side_length)
+                    y = random.randrange(0, self.height - side_length)
+                    if not is_overlapping(x, y, side_length, side_length):
+                        obstacles.append((x, y, side_length, side_length))
+                        diamond_points = [(x + side_length // 2, y),
+                                          (x + side_length, y + side_length // 2),
+                                          (x + side_length // 2, y + side_length),
+                                          (x, y + side_length // 2)]
+                        pygame.draw.polygon(self.obs_surface, self.obs_color, diamond_points)
+                        break
+                retries += 1
+
+        return obstacles
+
+    # 根据参数生成障碍物
+    def graph_setting(self,quantity, size,types, overlap):
+        self.clear_map()  # 重置地图
+        obstacles = []
+        max_retries = 200  # 障碍物最大寻址次数，保证每个障碍物不重叠
+        my_array = types
+        if overlap == "F": # 不重叠障碍物
+            # 检查一个障碍物是否与障碍物列表中的任何障碍物重叠
+            def is_overlapping(x, y, width, height):
+                for obstacle in obstacles:
+                    obstacle_x, obstacle_y, obstacle_width, obstacle_height = obstacle
+                    if x < obstacle_x + obstacle_width and x + width > obstacle_x and y < obstacle_y + obstacle_height and y + height > obstacle_y:
+                        return True
+                return False
+
+            # 根据用户输入的数量输出障碍物
+            for _ in range(int(quantity)):
+                retries = 0
+                while retries < max_retries:
+                    shape_type = random.choice(my_array)
+                    if shape_type == 0:
+                        # radius = random.randrange(10, 51)
+                        radius = int(size)//2 # 统一半径
+                        x = random.randrange(radius, self.width - radius)
+                        y = random.randrange(radius, self.height - radius)
+                        if not is_overlapping(x - radius, y - radius, 2 * radius, 2 * radius):
+                            obstacles.append((x - radius, y - radius, 2 * radius, 2 * radius))
+                            pygame.draw.circle(self.obs_surface, self.obs_color, (x, y), radius)
+                            break
+                    elif shape_type == 1:
+                        width = int(size)
+                        height = int(size)
+                        x = random.randrange(0, self.width - width)
+                        y = random.randrange(0, self.height - height)
+                        if not is_overlapping(x, y, width, height):
+                            obstacles.append((x, y, width, height))
+                            pygame.draw.rect(self.obs_surface, self.obs_color, (x, y, width, height))
+                            break
+                    # 添加椭圆形障碍物生成逻辑
+                    elif shape_type == 2:
+                        width = int(size)
+                        height = int(size)//2
+                        x = random.randrange(0, self.width - width)
+                        y = random.randrange(0, self.height - height)
+                        if not is_overlapping(x, y, width, height):
+                            obstacles.append((x, y, width, height))
+                            pygame.draw.ellipse(self.obs_surface, self.obs_color, (x, y, width, height))
+                            break
+                    # 添加正菱形障碍物生成逻辑
+                    elif shape_type == 3:
+                        side_length = int(size)
+                        x = random.randrange(0, self.width - side_length)
+                        y = random.randrange(0, self.height - side_length)
+                        if not is_overlapping(x, y, side_length, side_length):
+                            obstacles.append((x, y, side_length, side_length))
+                            diamond_points = [(x + side_length // 2, y),
+                                              (x + side_length, y + side_length // 2),
+                                              (x + side_length // 2, y + side_length),
+                                              (x, y + side_length // 2)]
+                            pygame.draw.polygon(self.obs_surface, self.obs_color, diamond_points)
+                            break
+                    elif shape_type == 4:
+                        width = int(size)
+                        height = int(size)//2
+                        x = random.randrange(0, self.width - width)
+                        y = random.randrange(0, self.height - height)
+                        if not is_overlapping(x, y, width, height):
+                            obstacles.append((x, y, width, height))
+                            pygame.draw.rect(self.obs_surface, self.obs_color, (x, y, width, height))
+                            break
+                    retries += 1
+
+            return obstacles
+        elif overlap == "T": # 重叠障碍物
+            for _ in range(int(quantity)):
+                shape_type = random.choice(my_array)  # 0表示圆形，1表示矩形
+                if shape_type == 0:
+                    radius = int(size)
+                    x = random.randrange(radius, self.width - radius)
+                    y = random.randrange(radius, self.height - radius)
+                    pygame.draw.circle(self.obs_surface, self.obs_color, (x, y), radius)
+                elif shape_type == 1:
+                    width = int(size)
+                    height = int(size)
+                    color = (random.randrange(256), random.randrange(256), random.randrange(256))
+                    x = random.randrange(0, self.width - width)
+                    y = random.randrange(0, self.height - height)
+                    pygame.draw.rect(self.obs_surface, self.obs_color, (x, y, width, height))
+                elif shape_type == 2:
+                    # 绘制椭圆
+                    width = int(size)
+                    height = int(size)//2
+                    x = random.randrange(0, self.width - width)
+                    y = random.randrange(0, self.height - height)
+                    pygame.draw.ellipse(self.obs_surface, self.obs_color, (x, y, width, height))
+                elif shape_type == 3:
+                    # 绘制菱形
+                    side_length = int(size)
+                    x = random.randrange(0, self.width - side_length)
+                    y = random.randrange(0, self.height - side_length)
+                    diamond_points = [(x + side_length // 2, y), (x + side_length, y + side_length // 2),
+                                      (x + side_length // 2, y + side_length), (x, y + side_length // 2)]
+                    pygame.draw.polygon(self.obs_surface, self.obs_color, diamond_points)
+                elif shape_type == 4:
+                    width = int(size)
+                    height = int(size)//2
+                    color = (random.randrange(256), random.randrange(256), random.randrange(256))
+                    x = random.randrange(0, self.width - width)
+                    y = random.randrange(0, self.height - height)
+                    pygame.draw.rect(self.obs_surface, self.obs_color, (x, y, width, height))
+
+
+
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
