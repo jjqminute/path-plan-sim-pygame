@@ -93,4 +93,4 @@ class apf:
         end_time = time.time();
         print("花费时间为")
         print(end_time - start_time)
-        return self.result;
+        return self.result,end_time - start_time;

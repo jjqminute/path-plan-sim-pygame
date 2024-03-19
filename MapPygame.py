@@ -189,7 +189,7 @@ class PygameWidget(QWidget):
     def startRtt(self):
         self.result = None
         self.search = rrt(self)
-        self.result = self.search.plan()
+        self.result, time1 = self.search.plan()
         if self.result is not None:
             for k in self.result:
                 pygame.draw.circle(self.plan_surface,(0,100,255),(k.x,k.y),3)
@@ -197,18 +197,77 @@ class PygameWidget(QWidget):
             for k in range(len(self.result) - 1):
                 pygame.draw.line(self.plan_surface, (0, 100, 255), (self.result[k].x, self.result[k].y),
                                  (self.result[k + 1].x, self.result[k + 1].y), 3)
+        track = []
+        for point in self.result:
+            x = point.x
+            y = point.y
+            track.append((x, y))
+        self.save_result(time1,track)
 
     def startApf(self):
         self.result = None
         self.search = apf(self)
-        self.result = self.search.plan()
-
+        self.result, time1 = self.search.plan()
         if self.result is not None:
             for k in self.result:
                 pygame.draw.circle(self.plan_surface, (0, 100, 255), (k[0], k[1]), 3)
             for k in range(len(self.result) - 1):
                 pygame.draw.line(self.plan_surface, (0, 100, 255), (self.result[k][0], self.result[k][1]),
                                  (self.result[k + 1][0], self.result[k + 1][1]), 3)
+        self.save_result(time1, self.result)
+
+    def save_result(self, time1, track):
+        """
+        保存结果文件，包括地图
+        :param time1: 运行的时间
+        :param track: 路径 [(x,y),(x,y),...]
+        :return:
+        """
+        # 创建文件对话框
+        dialog = QFileDialog()
+        # 设置文件对话框为保存文件模式
+        dialog.setAcceptMode(QFileDialog.AcceptSave)
+        # 设置对话框标题
+        dialog.setWindowTitle('保存地图')
+        # 设置文件过滤器
+        dialog.setNameFilter('地图文件 (*.txt)')
+        # 设置默认文件名，包含文件类型后缀
+        dialog.setDefaultSuffix('txt')
+
+        # 打开文件对话框，并返回保存的文件路径
+        file_path, _ = dialog.getSaveFileName(self, '保存地图', '', '地图文件 (*.txt)')
+
+        if file_path is None:
+            self.main_window.printf("路径未选择！", None, None)
+            return
+
+        features = []
+
+        # feature_collection = None
+
+        if self.obstacles is not None:
+            for obstacle in self.obstacles:
+                if obstacle[0] != obstacle[-1]:
+                    obstacle.append(obstacle[0])
+                features.append(
+                    geojson.Feature(geometry=geojson.Polygon([obstacle]), properties={"name": "障碍物"}))
+
+        if self.start_point is not None and self.end_point is not None:
+            start_point = Point(self.start_point)
+            end_point = Point(self.end_point)
+            features.append(Feature(geometry=start_point, properties={"name": "起始点"}))
+            features.append(Feature(geometry=end_point, properties={"name": "终点"}))
+
+        feature_collection = FeatureCollection(features)
+        js2 = json.loads(str(feature_collection))
+        js = dict(time=time1, track=track)
+        js2.update(js)
+        print(js2)
+        # 将FeatureCollection保存为GeoJSON格式的字符串
+        geojson_str = json.dumps(js2, indent=4)
+        with open(file_path, 'w') as file:
+            file.write(geojson_str)
+        self.main_window.printf("地图和结果数据已成功保存！", None, None)
 
     def save_map(self):
         # 创建文件对话框

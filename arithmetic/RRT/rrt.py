@@ -191,7 +191,7 @@ class rrt:
                 end = time.time()
                 print("花费时间为")
                 print(end - start)
-                return path
+                return path, end - start
 
         # 如果最大迭代次数后仍未找到路径，则返回空路径
         print("未找到路径！！！")
