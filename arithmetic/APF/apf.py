@@ -21,12 +21,12 @@ class apf:
         self.height = mapdata.height
         self.obstacles = mapdata.obstacles
         # 参数
-        self.attraction_coeff = 3.0  # 吸引力系数
+        self.attraction_coeff = 5.0  # 吸引力系数
         self.repulsion_coeff = 300.0  # 斥力系数
-        self.repulsion_threshold = 500 # 斥力作用距离阈值
+        self.repulsion_threshold = 100 # 斥力作用距离阈值
         self.obstacle = mapdata.obs_surface #多边形障碍物顶点
         self.position_history = []  # 用于存储历史位置的列表
-        self.history_size = 10 #检测震荡时的点是否大于这个值
+        self.history_size = 100 #检测震荡时的点是否大于这个值
         self.oscillation_detection_threshold = 0.5  # 震荡检测阈值
 
     def distance(self, point1, point2):
@@ -38,35 +38,43 @@ class apf:
         dx = self.end.x - current_point.x
         dy = self.end.y - current_point.y
         distance_to_goal = self.distance(current_point, self.end)
-
         if distance_to_goal > 0:
-            # 向目标的单位向量乘以吸引力系数
-            force_x = (dx / distance_to_goal) * self.attraction_coeff
-            force_y = (dy / distance_to_goal) * self.attraction_coeff
+            force_x =  dx / distance_to_goal*self.attraction_coeff
+            force_y = dy / distance_to_goal*self.attraction_coeff
         else:
             force_x = force_y = 0
-        # 返回受到的引力的向量
         return force_x, force_y
 
     def calculate_repulsion(self, current_point):
         # 计算斥力
         force_x = force_y = 0.0
         for obstacle in self.obstacles:
+            #多边形
             obs = Polygon(obstacle)
+            #当前点
             pos = Point(current_point.x, current_point.y)
+            # if obs.contains(pos):
+            #     continue
+            #寻找最近的距离
             nearest_pt = nearest_points(pos, obs)[1]
             # 计算障碍物距离
             distance_to_obstacle = pos.distance(obs)
-            d0 = self.repulsion_threshold  # 斥力作用距离阈值
+
             # 如果距离小于障碍物影响范围
             if distance_to_obstacle < self.repulsion_threshold:
+                # 计算机器人当前位置指向障碍物边界的单位向量
+                dx = nearest_pt.x - current_point.x
+                dy = nearest_pt.y - current_point.y
+                distance = math.sqrt(dx ** 2 + dy ** 2)
+                if distance > 0:
+                    dx /= distance
+                    dy /= distance
+                # 计算斥力的大小
                 force = self.repulsion_coeff * (1.0 / distance_to_obstacle - 1.0 / self.repulsion_threshold) / (
                             distance_to_obstacle ** 2)
-                # 角度
-                angle = math.atan2(nearest_pt.y - current_point.y, nearest_pt.x - current_point.x)
-                # 累计获得总的方向斥力
-                force_x -= force * math.cos(angle)
-                force_y -= force * math.sin(angle)
+                # 累积斥力的分量
+                force_x -= force * dx
+                force_y -= force * dy
         return force_x, force_y
 
     def add_position_to_history(self, current_point):
@@ -109,6 +117,35 @@ class apf:
 
         return escape_x, escape_y
 
+    def calculate_boundary_repulsion(self, current_point):
+        force_x = force_y = 0.0
+        boundary_repulsion_coeff = 1000.0  # 边界斥力系数，可根据实际需要调整
+        boundary_threshold = 10  # 边界阈值，当机器人距离边缘小于此值时，斥力开始作用
+
+        # 检查四个方向（上下左右）与边界的距离
+        distances_to_boundary = {
+            'left': current_point.x,
+            'right': self.width - current_point.x,
+            'top': self.height - current_point.y,
+            'bottom': current_point.y
+        }
+
+        for direction, distance in distances_to_boundary.items():
+            if distance < boundary_threshold:
+                force = boundary_repulsion_coeff * (1.0 / distance - 1.0 / boundary_threshold) / (distance ** 2)
+
+                # 根据不同的方向调整斥力方向
+                if direction == 'left':
+                    force_x += force
+                elif direction == 'right':
+                    force_x -= force
+                elif direction == 'top':
+                    force_y -= force
+                elif direction == 'bottom':
+                    force_y += force
+
+        return force_x, force_y
+
     def plan(self):
         # 寻找路径的方法
         current_point = self.start
@@ -118,10 +155,12 @@ class apf:
             attraction_x, attraction_y = self.calculate_attraction(current_point)
             # 斥力向量
             repulsion_x, repulsion_y = self.calculate_repulsion(current_point)
+            #边界斥力
+            boundary_repulsion_x, boundary_repulsion_y = self.calculate_boundary_repulsion(current_point)
 
             # 合力向量
-            total_force_x = attraction_x + repulsion_x
-            total_force_y = attraction_y + repulsion_y
+            total_force_x = attraction_x + repulsion_x + boundary_repulsion_x
+            total_force_y = attraction_y + repulsion_y + boundary_repulsion_y
 
             # 确定下一步的位置
             next_x = current_point.x + total_force_x
@@ -132,6 +171,11 @@ class apf:
                 print("陷入震荡，尝使逃逸...")
                 self.escape_from_oscillation()  # 实施逃逸策略
                 #break  # 退出循环
+            if self.distance(next_point,self.end)<10:
+                print ("成功规划！！")
+                self.result.append((self.end.x,self.end.y))
+                break;
+
             self.result.append((next_point.x, next_point.y))
             current_point = next_point
             self.count += 1
