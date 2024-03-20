@@ -351,6 +351,7 @@ class PygameWidget(QWidget):
         if event.button() == Qt.LeftButton:
             self.drawing = False
             self.last_pos = None
+            self.get_obs_vertices()
 
     # 绘制pygame界面
     def paintEvent(self, event):
@@ -670,6 +671,7 @@ class PygameWidget(QWidget):
                 y = self.star_center[1] + self.star_outer_radius * math.sin(i * self.angle)
                 self.star_points.append((int(x), int(y)))
             pygame.draw.polygon(self.obs_surface, BLACK, self.star_points)
+        self.get_obs_vertices()
 
     #  随机多边形障碍物
     def random_graph(self, count):
@@ -723,6 +725,7 @@ class PygameWidget(QWidget):
                         star_points.append(
                             (x + side_length // 2 + side_length * math.cos(angle), y + side_length * math.sin(angle)))
                 pygame.draw.polygon(self.obs_surface, self.obs_color, star_points)
+        self.get_obs_vertices()
         self.main_window.text_result.append("成功生成 %s 个随机障碍物" % count)
 
 
