@@ -18,6 +18,8 @@ import geopandas as gpd
 from shapely.geometry import Point, MultiPoint, shape
 import cv2
 import numpy
+
+from arithmetic.APF.apf import apf
 from arithmetic.Astar.Map import Map
 from arithmetic.Astar.astar import astar
 from arithmetic.RRT.rrt import rrt
@@ -198,6 +200,17 @@ class PygameWidget(QWidget):
                 pygame.draw.line(self.plan_surface, (0, 100, 255), (self.result[k].x, self.result[k].y),
                                  (self.result[k + 1].x, self.result[k + 1].y), 3)
         # self.plan_surface=self.search.process()()[1]
+    def startApf(self):
+        self.result = None
+        self.search = apf(self)
+        self.result = self.search.plan()
+
+        if self.result is not None:
+            for k in self.result:
+                pygame.draw.circle(self.plan_surface, (0, 100, 255), (k[0], k[1]), 3)
+            for k in range(len(self.result) - 1):
+                pygame.draw.line(self.plan_surface, (0, 100, 255), (self.result[k][0], self.result[k][1]),
+                                 (self.result[k + 1][0], self.result[k + 1][1]), 3)
 
     # 保存地图文件
     def save_map(self):
