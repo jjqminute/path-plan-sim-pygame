@@ -186,7 +186,7 @@ class Rrt:
                 print(new_node)
 
                 pygame.draw.circle(plan_surface, (0, 100, 255), (current_node.x, current_node.y), 2)
-                pygame.draw.line(plan_surface, (0, 100, 100), (current_node.x, current_node.y),
+                pygame.draw.line(plan_surface, (100, 0, 100), (current_node.x, current_node.y),
                                  (self.end.x, self.end.y), 4)
                 QApplication.processEvents()
 
