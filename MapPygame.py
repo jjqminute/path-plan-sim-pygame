@@ -20,7 +20,7 @@ import cv2
 import numpy
 from arithmetic.Astar.Map import Map
 from arithmetic.Astar.astar import astar
-from arithmetic.RRT.rrt import rrt
+from arithmetic.RRT.rrt import Rrt
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -186,17 +186,18 @@ class PygameWidget(QWidget):
                 #time.sleep(0.1)
 
     # RRT算法
-    def startRtt(self):
-        self.result = None
-        self.search = rrt(self)
-        self.result = self.search.plan()
-        if self.result is not None:
-            for k in self.result:
-                pygame.draw.circle(self.plan_surface,(0,100,255),(k.x,k.y),3)
-        if self.result is not None:
-            for k in range(len(self.result) - 1):
-                pygame.draw.line(self.plan_surface, (0, 100, 255), (self.result[k].x, self.result[k].y),
-                                 (self.result[k + 1].x, self.result[k + 1].y), 3)
+    def start_rrt(self):
+        self.result = Rrt(self).plan(self.plan_surface)
+        # self.result = None
+        # self.search = Rrt(self)
+        # self.result = self.search.plan(self.plan_surface)
+        # if self.result is not None:
+        #     for k in self.result:
+        #         pygame.draw.circle(self.plan_surface,(0,100,255),(k.x,k.y),3)
+        # if self.result is not None:
+        #     for k in range(len(self.result) - 1):
+        #         pygame.draw.line(self.plan_surface, (0, 100, 255), (self.result[k].x, self.result[k].y),
+        #                          (self.result[k + 1].x, self.result[k + 1].y), 3)
         # self.plan_surface=self.search.process()()[1]
 
     # 保存地图文件

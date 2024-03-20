@@ -446,7 +446,7 @@ class Ui_MainWindow(object):
             self.grid_widget.startAstar()
         elif self.combo_arithmetic.currentText() == "RRT":
             print("启动RRT算法！！！")
-            self.grid_widget.startRtt()
+            self.grid_widget.start_rrt()
         elif self.combo_arithmetic.currentText() == "APF":
             print("启动APF算法！！！")
             self.grid_widget.startApf()
