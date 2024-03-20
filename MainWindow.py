@@ -349,7 +349,6 @@ class Ui_MainWindow(object):
     def openNewWindow(self):
         new_window = QtWidgets.QMainWindow()
         ui = Ui_MainWindow()
-        grid_widget = GridWidget(ui)
         pw = PygameWidget(ui)
         ui.setupUi(new_window, pw)
 
