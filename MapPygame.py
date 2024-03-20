@@ -194,8 +194,8 @@ class PygameWidget(QWidget):
 
         if self.result is not None:
             for k in self.result:
-                pygame.draw.circle(self.plan_surface,(0,100,255),(k.x,k.y),3)
-                #time.sleep(0.1)
+                pygame.draw.circle(self.plan_surface, (0, 100, 255), (k.x, k.y), 3)
+                # time.sleep(0.1)
 
     # RRT算法
     def start_rrt(self):
@@ -229,7 +229,7 @@ class PygameWidget(QWidget):
         file_path, _ = dialog.getSaveFileName(self, '保存地图', '', '地图文件 (*.txt)')
 
         if file_path is None:
-            self.main_window.printf("路径未选择！", None, None)
+            self.main_window.printf("路径未选择！")
             return
 
         features = []
@@ -258,7 +258,7 @@ class PygameWidget(QWidget):
 
         with open(file_path, 'w') as file:
             file.write(geojson_str)
-        self.main_window.printf("地图已成功保存！", None, None)
+        self.main_window.printf("地图已成功保存！")
 
         # 关闭文件保存对话框
         # self.win_main.quit()
@@ -279,7 +279,7 @@ class PygameWidget(QWidget):
         #     data = json.load(file)
         # 打开并读取txt文件内容
         if not file_path:
-            self.main_window.printf("路径未选择！", None, None)
+            self.main_window.printf("路径未选择！")
             return
         # 如果选择了文件路径，则进行地图识别的操作
         with open(file_path, 'r') as file:
@@ -521,19 +521,18 @@ class PygameWidget(QWidget):
     def modifyMap(self, size):
         if self.start_point is None and self.end_point is None and len(self.obstacles) == 0:
             if not isinstance(size, str):
-                self.main_window.printf("请输入正确的分辨率！", None, None)
+                self.main_window.printf("请输入正确的分辨率！")
                 if int(size) > 0:
                     new_size = int(size)
                     self.cell_size = new_size
                     print(self.cell_size)
                     self.cols = self.width // self.cell_size
                     self.rows = self.height // self.cell_size
-                    self.main_window.printf("分辨率调整成功！", None, None)
+                    self.main_window.printf("分辨率调整成功！")
                 else:
-                    self.main_window.printf("请输入正确的分辨率！", None, None)
+                    self.main_window.printf("请输入正确的分辨率！")
         else:
-            self.main_window.printf("当前地图已起始点或障碍点不可调整地图分辨率，请清空地图后再次调整分辨率！", None,
-                                    None)
+            self.main_window.printf("当前地图已起始点或障碍点不可调整地图分辨率，请清空地图后再次调整分辨率！")
 
     # 随机起始点方法[Ok]
     def generateRandomStart(self):
@@ -553,7 +552,7 @@ class PygameWidget(QWidget):
             pygame.draw.circle(self.point_surface, (0, 255, 0), (x, y), self.point_radius)
             self.update()
         else:
-            self.main_window.printf("error: 已经设置起点！", None, None)
+            self.main_window.printf("error: 已经设置起点！")
 
         if self.end_point is None and self.end_point != self.start_point:
             # 生成随机的x和y坐标
@@ -570,7 +569,7 @@ class PygameWidget(QWidget):
             self.main_window.printf("添加终点：", y_1, x_1)
             self.update()
         else:
-            self.main_window.printf("error: 已经设置终点！", None, None)
+            self.main_window.printf("error: 已经设置终点！")
         self.update()
 
     def update_obs_surface(self):
@@ -584,7 +583,7 @@ class PygameWidget(QWidget):
         self.end_point = None  # 清除终点
         self.obstacles = []  # 清空障碍物列表
         self.update_map()
-        self.main_window.printf("已经清空地图", None, None)
+        self.main_window.printf("已经清空地图")
         # self.update()  # 更新界面
 
     # 清空地图起始点[OK]
@@ -592,7 +591,7 @@ class PygameWidget(QWidget):
         self.start_point = None  # 清除起点
         self.end_point = None  # 清除终点
         self.update_map()
-        self.main_window.printf("已经清空起始点", None, None)
+        self.main_window.printf("已经清空起始点")
         self.update()  # 更新界面
 
     #  更新地图界面方法[OK]
@@ -763,9 +762,9 @@ class PygameWidget(QWidget):
 
     #  随机多边形不重叠障碍物
     def random_graph_new(self, count):
-        self.clear_map() # 重置地图
+        self.clear_map()  # 重置地图
         obstacles = []
-        max_retries = 200 # 障碍物最大寻址次数，保证每个障碍物不重叠
+        max_retries = 200  # 障碍物最大寻址次数，保证每个障碍物不重叠
 
         # 检查一个障碍物是否与障碍物列表中的任何障碍物重叠
         def is_overlapping(x, y, width, height):
@@ -822,15 +821,16 @@ class PygameWidget(QWidget):
                         break
                 retries += 1
 
+        self.get_obs_vertices()
         return obstacles
 
     # 根据参数生成障碍物
-    def graph_setting(self,quantity, size,types, overlap):
+    def graph_setting(self, quantity, size, types, overlap):
         self.clear_map()  # 重置地图
         obstacles = []
         max_retries = 200  # 障碍物最大寻址次数，保证每个障碍物不重叠
         my_array = types
-        if overlap == "F": # 不重叠障碍物
+        if overlap == "F":  # 不重叠障碍物
             # 检查一个障碍物是否与障碍物列表中的任何障碍物重叠
             def is_overlapping(x, y, width, height):
                 for obstacle in obstacles:
@@ -846,7 +846,7 @@ class PygameWidget(QWidget):
                     shape_type = random.choice(my_array)
                     if shape_type == 0:
                         # radius = random.randrange(10, 51)
-                        radius = int(size)//2 # 统一半径
+                        radius = int(size) // 2  # 统一半径
                         x = random.randrange(radius, self.width - radius)
                         y = random.randrange(radius, self.height - radius)
                         if not is_overlapping(x - radius, y - radius, 2 * radius, 2 * radius):
@@ -865,7 +865,7 @@ class PygameWidget(QWidget):
                     # 添加椭圆形障碍物生成逻辑
                     elif shape_type == 2:
                         width = int(size)
-                        height = int(size)//2
+                        height = int(size) // 2
                         x = random.randrange(0, self.width - width)
                         y = random.randrange(0, self.height - height)
                         if not is_overlapping(x, y, width, height):
@@ -887,7 +887,7 @@ class PygameWidget(QWidget):
                             break
                     elif shape_type == 4:
                         width = int(size)
-                        height = int(size)//2
+                        height = int(size) // 2
                         x = random.randrange(0, self.width - width)
                         y = random.randrange(0, self.height - height)
                         if not is_overlapping(x, y, width, height):
@@ -896,8 +896,8 @@ class PygameWidget(QWidget):
                             break
                     retries += 1
 
-            return obstacles
-        elif overlap == "T": # 重叠障碍物
+
+        elif overlap == "T":  # 重叠障碍物
             for _ in range(int(quantity)):
                 shape_type = random.choice(my_array)  # 0表示圆形，1表示矩形
                 if shape_type == 0:
@@ -915,7 +915,7 @@ class PygameWidget(QWidget):
                 elif shape_type == 2:
                     # 绘制椭圆
                     width = int(size)
-                    height = int(size)//2
+                    height = int(size) // 2
                     x = random.randrange(0, self.width - width)
                     y = random.randrange(0, self.height - height)
                     pygame.draw.ellipse(self.obs_surface, self.obs_color, (x, y, width, height))
@@ -929,14 +929,14 @@ class PygameWidget(QWidget):
                     pygame.draw.polygon(self.obs_surface, self.obs_color, diamond_points)
                 elif shape_type == 4:
                     width = int(size)
-                    height = int(size)//2
+                    height = int(size) // 2
                     color = (random.randrange(256), random.randrange(256), random.randrange(256))
                     x = random.randrange(0, self.width - width)
                     y = random.randrange(0, self.height - height)
                     pygame.draw.rect(self.obs_surface, self.obs_color, (x, y, width, height))
 
-
-
+        self.get_obs_vertices()
+        return obstacles
 
 
 class MainWindow(QMainWindow):

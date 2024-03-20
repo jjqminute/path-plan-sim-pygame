@@ -260,7 +260,7 @@ class Ui_MainWindow(object):
         self.pushButton_5 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_5.setGeometry(QtCore.QRect(460, 455, 80, 23))
         self.pushButton_5.setObjectName("pushButton_5")
-        self.pushButton_5.clicked.connect(lambda:grid_widget.random_graph_new(int(self.lineEdit_block.text())))
+        self.pushButton_5.clicked.connect(lambda: grid_widget.random_graph_new(int(self.lineEdit_block.text())))
         # 随机起始点按钮
         self.pushButton_6 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_6.setGeometry(QtCore.QRect(550, 455, 80, 23))
@@ -270,7 +270,7 @@ class Ui_MainWindow(object):
         self.pushButton_7 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_7.setGeometry(QtCore.QRect(640, 455, 80, 23))
         self.pushButton_7.setObjectName("pushButton_7")
-        self.pushButton_7.clicked.connect(self.startPath) # 方法
+        self.pushButton_7.clicked.connect(self.startPath)  # 方法
         self.actionCreate = QtWidgets.QAction(MainWindow)
         self.actionCreate.setObjectName("actionCreate")
         # 点击菜单连接方法
@@ -331,6 +331,7 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
         # self.grid_widget = grid_widget
+
     # 打开参数障碍物窗口
     def open_modifyOb(self):
         new_window = QtWidgets.QMainWindow()
@@ -338,8 +339,9 @@ class Ui_MainWindow(object):
         new_window.setWindowTitle('参数障碍物')
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+
     # 文本框输出提示信息
-    def printf(self, msg, x, y):
+    def printf(self, msg, x=None, y=None):
         if x is None and y is None:
             self.text_result.append("%s" % msg)
         else:
@@ -437,18 +439,22 @@ class Ui_MainWindow(object):
         self.combo_arithmetic_obs.setItemText(6, _translate("MainWindow", "五角形"))
         self.pushButton_paint_rand.setText(_translate("MainWindow", "图形障碍物"))
         self.pushButton_ob.setText(_translate("MainWindow", "参数障碍物"))
+
     # 路径规划
     def startPath(self):
+        if not self.grid_widget.obstacles or not self.grid_widget.start_point or not self.grid_widget.end_point:
+            self.printf("未设置障碍物或起始点或终点")
         # 根据不同的算法
-        if self.combo_arithmetic.currentText() == "Astar":
-            print("启动A星算法！！！")
-            self.grid_widget.startAstar()
-        elif self.combo_arithmetic.currentText() == "RRT":
-            print("启动RRT算法！！！")
-            self.grid_widget.start_rrt()
-        elif self.combo_arithmetic.currentText() == "APF":
-            print("启动APF算法！！！")
-            self.grid_widget.startApf()
+        else:
+            if self.combo_arithmetic.currentText() == "Astar":
+                self.printf("启动A星算法！！！")
+                self.grid_widget.startAstar()
+            elif self.combo_arithmetic.currentText() == "RRT":
+                self.printf("启动RRT算法！！！")
+                self.grid_widget.start_rrt()
+            elif self.combo_arithmetic.currentText() == "APF":
+                self.printf("启动APF算法！！！")
+                self.grid_widget.startApf()
 
     def ori_end_input(self):  # 输入起始点终点函数
         coordinate = self.text_input.text()
