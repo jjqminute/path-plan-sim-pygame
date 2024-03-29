@@ -16,7 +16,7 @@ class Rrt:
         self.obstacle = mapdata.obs_surface
         self.height = mapdata.height
         self.tree = []
-        self.step = 20
+        self.step = 10
         self.max_iterations = 10000
 
     def rand_point(self):

@@ -22,7 +22,7 @@ from arithmetic.APF.apf import apf
 from arithmetic.Astar.Map import Map
 from arithmetic.Astar.astar import astar
 from arithmetic.RRT.rrt import Rrt
-
+from arithmetic.APFRRT.APFRRT import APFRRT
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
@@ -216,15 +216,11 @@ class PygameWidget(QWidget):
     def startApf(self):
         self.result = None
         self.search = apf(self)
-        self.result = self.search.plan()
+        self.result = self.search.plan(self.plan_surface)
 
-        if self.result is not None:
-            for k in self.result:
-                pygame.draw.circle(self.plan_surface, (0, 100, 255), (k[0], k[1]), 3)
-            for k in range(len(self.result) - 1):
-                pygame.draw.line(self.plan_surface, (0, 100, 255), (self.result[k][0], self.result[k][1]),
-                                 (self.result[k + 1][0], self.result[k + 1][1]), 3)
-
+    def startApfRrt(self):
+        self.result = None
+        self.result = APFRRT(self).plan(self.plan_surface)
     # 保存地图文件
     def save_map(self):
         # 创建文件对话框

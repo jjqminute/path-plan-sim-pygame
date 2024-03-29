@@ -22,12 +22,12 @@ class apf:
         self.obstacles = mapdata.obstacles
         # 参数
         self.attraction_coeff = 5.0  # 吸引力系数
-        self.repulsion_coeff = 5000.0  # 斥力系数
-        self.repulsion_threshold = 500 # 斥力作用距离阈值
+        self.repulsion_coeff = 50000.0  # 斥力系数
+        self.repulsion_threshold = 1000 # 斥力作用距离阈值
         self.obstacle = mapdata.obs_surface #多边形障碍物顶点
         self.position_history = []  # 用于存储历史位置的列表
         self.history_size = 100 #检测震荡时的点是否大于这个值
-        self.oscillation_detection_threshold = 0.5  # 震荡检测阈值
+        self.oscillation_detection_threshold = 3  # 震荡检测阈值
 
     def distance(self, point1, point2):
         # 计算两点直接的距离
@@ -106,12 +106,12 @@ class apf:
         """实施逃逸策略"""
         # 逃逸策略，可以是改变系数、随机移动等
         # 增加引力系数，减少斥力系数
-        self.attraction_coeff *= 1.2
-        self.repulsion_coeff *= 0.8
+        # self.attraction_coeff *= 1.2
+        #self.repulsion_coeff = 10
 
         # 随机选择一个方向移动一段距离
         random_angle = random.uniform(0, 2 * math.pi)
-        escape_distance = 10  # 可以根据实际情况调整
+        escape_distance = 30  # 可以根据实际情况调整
         escape_x = math.cos(random_angle) * escape_distance
         escape_y = math.sin(random_angle) * escape_distance
 
@@ -120,7 +120,7 @@ class apf:
     def calculate_boundary_repulsion(self, current_point):
         force_x = force_y = 0.0
         boundary_repulsion_coeff = 1000.0  # 边界斥力系数，可根据实际需要调整
-        boundary_threshold = 10  # 边界阈值，当机器人距离边缘小于此值时，斥力开始作用
+        boundary_threshold = 30  # 边界阈值，当机器人距离边缘小于此值时，斥力开始作用
 
         # 检查四个方向（上下左右）与边界的距离
         distances_to_boundary = {
@@ -146,7 +146,7 @@ class apf:
 
         return force_x, force_y
 
-    def plan(self):
+    def plan(self,plan_surface):
         # 寻找路径的方法
         current_point = self.start
         start_time = time.time()
@@ -168,14 +168,18 @@ class apf:
             next_point = point(next_x, next_y)
             self.add_position_to_history(current_point)  # 更新历史位置
             if self.detect_oscillation():  # 检测到震荡
-                print("陷入震荡，尝使逃逸...")
-                self.escape_from_oscillation()  # 实施逃逸策略
-                #break  # 退出循环
+                print("陷入震荡...")
+                #next_x,next_y= self.escape_from_oscillation()  # 实施逃逸策略
+                break  # 退出循环
             if self.distance(next_point,self.end)<10:
                 print ("成功规划！！")
                 self.result.append((self.end.x,self.end.y))
                 break;
+            next_point = point(next_x, next_y)
+            if next_point:
+                pygame.draw.circle(plan_surface, (0, 100, 255), (next_point.x, next_point.y), 2)
 
+                QApplication.processEvents()  # 强制Qt处理事件队列（重绘）
             self.result.append((next_point.x, next_point.y))
             current_point = next_point
             self.count += 1
