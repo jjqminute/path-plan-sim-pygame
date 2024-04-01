@@ -70,7 +70,7 @@ class APFRRT():
             nearest_pt = nearest_points(pos, obs)[1]
             # 计算障碍物距离
             distance_to_obstacle = pos.distance(obs)
-
+            force=0
             # 如果距离小于障碍物影响范围
             if distance_to_obstacle < self.repulsion_threshold:
                 # 计算机器人当前位置指向障碍物边界的单位向量
@@ -113,6 +113,7 @@ class APFRRT():
         # 如果陷入局部极小值
         else:
             self.falsecount+=1
+            #如果尝使的次数变多，增加步长
             if(self.falsecount>=5):
                 self.step+=5
                 self.falsecount=0
@@ -330,7 +331,9 @@ class APFRRT():
 
                 path.append(self.start)  # 确保路径以起始点开始
                 path.reverse()
-
+                middtimer = time.time()
+                print("路径规划花费时间为")
+                print(middtimer - start)
                 smoothed_path = self.smooth_path_bezier(path, 100)
                 smoothed_path.append(self.end)
                 for k in smoothed_path:
@@ -359,7 +362,7 @@ class APFRRT():
 
                 path.reverse()
                 end = time.time()
-                print("花费时间为")
+                print("总花费时间为")
                 print(end - start)
                 return path
 
