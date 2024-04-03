@@ -24,6 +24,8 @@ from arithmetic.Astar.Map import Map
 from arithmetic.Astar.astar import astar
 from arithmetic.RRT.rrt import rrt
 
+from result import result_demo
+
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
@@ -261,8 +263,10 @@ class PygameWidget(QWidget):
             features.append(Feature(geometry=end_point, properties={"name": "终点"}))
 
         feature_collection = FeatureCollection(features)
+        # 先封装经过计算再存入结果文件
+        r = result_demo(self.start_point, self.end_point, time1, self.obstacles, track)
         js2 = json.loads(str(feature_collection))
-        js = dict(time=time1, track=track)
+        js = dict(time=time1, track=track, smoothness=r.smoothness, pathlen=r.pathlen)  # 加入r中计算的数据到结果类中
         js2.update(js)
         print(js2)
         # 将FeatureCollection保存为GeoJSON格式的字符串
