@@ -24,9 +24,9 @@ class APFRRT():
         #全局障碍物信息
         self.obstacle = mapdata.obs_surface
         # APF参数
-        self.attraction_coeff = 15.0  # 吸引力系数
+        self.attraction_coeff = 5.0  # 吸引力系数
         self.repulsion_coeff = 5000.0  # 斥力系数
-        self.repulsion_threshold = 50  # 斥力作用距离阈值
+        self.repulsion_threshold = 200  # 斥力作用距离阈值
         # 检测震荡参数
         self.position_history = []  # 用于存储历史位置的列表
         self.history_size = 100  # 检测震荡时的点是否大于这个值
@@ -34,7 +34,7 @@ class APFRRT():
         # RRT参数
         #self.step = 10
         self.tree = []
-        self.step = 20
+        self.step = 15
         #最大迭代次数
         self.max_iterations = 10000
         #动态调整参数
@@ -59,6 +59,7 @@ class APFRRT():
     def calculate_repulsion(self, current_point):
         # 根据障碍物斥力计算当前位置的斥力向量
         force_x = force_y = 0.0
+        closest_distance = float('inf')  # 初始化最近距离为无穷大
         for obstacle in self.obstacles:
             # 多边形
             obs = Polygon(obstacle)
@@ -66,13 +67,15 @@ class APFRRT():
             pos = Point(current_point.x, current_point.y)
             # if obs.contains(pos):
             #     continue
-            # 寻找最近的距离
+            # 寻找最近的障碍物点
             nearest_pt = nearest_points(pos, obs)[1]
             # 计算障碍物距离
             distance_to_obstacle = pos.distance(obs)
             force=0
             # 如果距离小于障碍物影响范围
             if distance_to_obstacle < self.repulsion_threshold:
+                if distance_to_obstacle < closest_distance:
+                    closest_distance = distance_to_obstacle
                 # 计算机器人当前位置指向障碍物边界的单位向量
                 dx = nearest_pt.x - current_point.x
                 dy = nearest_pt.y - current_point.y
@@ -90,6 +93,10 @@ class APFRRT():
                 # 累积斥力的分量
                 force_x -= force * dx
                 force_y -= force * dy
+        # if closest_distance < 20:
+        #     self.step = max(8, self.step-1)  # 举例：减小步长
+        # else:
+        #     self.step = min(20, self.step + 5)  # 举例：增加步长
         return force_x, force_y
 
     def rand_point(self, current_point):
@@ -107,24 +114,35 @@ class APFRRT():
         magnitude = math.sqrt(total_force_x ** 2 + total_force_y ** 2)
         if magnitude > 0 and (total_force_x >1or total_force_y >1):
             # 根据势场和斥力的合力方向调整随机点的偏移量
-            offset_factor = 0.8
-            random_x = current_point.x + offset_factor * total_force_x * random.uniform(0.5, 1.0)
-            random_y = current_point.y + offset_factor * total_force_y * random.uniform(0.5, 1.0)
-        # 如果陷入局部极小值
+            offset_factor = 1.2
+            #随机性更强
+            #random_x = (current_point.x + offset_factor * total_force_x * random.uniform(0.5, 1.0))*self.step*0.2
+            #random_y = (current_point.y + offset_factor * total_force_y * random.uniform(0.5, 1.0))*self.step*0.2
+            #APF步长更大
+            random_x = (current_point.x + offset_factor * total_force_x *self.step*0.1*random.uniform(0.5, 1.0))
+            random_y = (current_point.y + offset_factor * total_force_y *self.step*0.1*random.uniform(0.5, 1.0))
+            #random_x = (current_point.x + offset_factor * total_force_x * random.uniform(0.5, 1.0))
+            #random_y = (current_point.y + offset_factor * total_force_y * random.uniform(0.5, 1.0))
+        # 如果即将或已陷入局部极小值
         else:
             self.falsecount+=1
             #如果尝使的次数变多，增加步长
-            if(self.falsecount>=5):
-                self.step+=5
-                self.falsecount=0
+            # if(self.falsecount>=5):
+            #     self.step+=5
+            #     self.falsecount=0
+
             # 如果合力为0，随机选择一个点
             random_x = random.uniform(0,self.width)
             random_y = random.uniform(0,self.height)
         if self.collision((current_point.x,current_point.y),(random_x,random_y)):
-            random_x = random.uniform(0,self.width)
-            random_y = random.uniform(0,self.height)
+            print ("随机点")
+            self.falsecount += 1
+            random_x ,random_y = self.random_nodes()
         return point(random_x, random_y)
-
+    def random_nodes(self):
+        random_x = random.uniform(self.width-self.end.x, self.width)
+        random_y = random.uniform(0, self.height)
+        return random_x, random_y
     def nearest_neighbor(self, tree, target_point):
         """
         在树中寻找最接近目标点的节点。
@@ -172,7 +190,7 @@ class APFRRT():
 
     def normalize(self, vx, vy):
         """
-        将输入向量标准化，并返回其坐标。
+        将输入向量标准化，并返回单位向量。
 
         Args:
         - vx: 向量的 x 坐标分量。
@@ -235,6 +253,7 @@ class APFRRT():
             return new_node
         else:
             # 如果发生碰撞，则返回 None 表示扩展失败
+
             return None
 
     def collision(self, src, dst):
@@ -319,7 +338,7 @@ class APFRRT():
                 QApplication.processEvents()
             # 2. 检查是否达到目标点
             if new_node and self.is_goal_reached(new_node, (self.end.x, self.end.y), max_distance):
-                #平滑路径
+
                 path = [self.end]  # 确保路径以目标点结束
 
                 while current_node is not None:

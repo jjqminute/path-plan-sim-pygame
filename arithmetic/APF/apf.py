@@ -22,8 +22,8 @@ class apf:
         self.obstacles = mapdata.obstacles
         # 参数
         self.attraction_coeff = 5.0  # 吸引力系数
-        self.repulsion_coeff = 50000.0  # 斥力系数
-        self.repulsion_threshold = 1000 # 斥力作用距离阈值
+        self.repulsion_coeff = 1000.0  # 斥力系数
+        self.repulsion_threshold = 100 # 斥力作用距离阈值
         self.obstacle = mapdata.obs_surface #多边形障碍物顶点
         self.position_history = []  # 用于存储历史位置的列表
         self.history_size = 100 #检测震荡时的点是否大于这个值

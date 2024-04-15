@@ -591,6 +591,10 @@ class PygameWidget(QWidget):
         self.start_point = None  # 清除起点
         self.end_point = None  # 清除终点
         self.obstacles = []  # 清空障碍物列表
+        self.obs_surface.fill(self.back_color)
+        self.plan_surface.fill(self.back_color)
+        self.point_surface.fill(self.back_color)
+        self.grid_surface.fill(self.back_color)
         self.update_map()
         self.main_window.printf("已经清空地图")
         # self.update()  # 更新界面
