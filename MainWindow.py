@@ -1,8 +1,10 @@
 import re
+import threading
+
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QMainWindow, QMessageBox, QApplication, QFileDialog, QLineEdit, QLabel, QSlider, \
-    QCheckBox, QButtonGroup, QRadioButton, QPushButton
+    QCheckBox, QButtonGroup, QRadioButton, QPushButton, QComboBox
 from AlgorithmList import AlgorithmList
 from GridWidget import GridWidget
 from MapPygame import PygameWidget
@@ -11,11 +13,11 @@ from MapPygame import PygameWidget
 class Ui_MainWindow(object):
     windows = []  # 存储所有创建的窗口实例
 
-    # 参数障碍物窗口
+    # 参数障碍物窗口 根据用户选择生成相同大小障碍物
     def modify_obstacles(self, MainWindow, grid_widget):
         self.loginWindow_new = None
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(400, 300)
+        MainWindow.setFixedSize(400, 300) # 窗口大小锁定
         # 创建障碍物数量标签
         self.label_sum = QLabel("障碍物数量:", MainWindow)
         self.label_sum.setGeometry(60, 50, 80, 30)  # 设置标签位置和大小
@@ -31,7 +33,7 @@ class Ui_MainWindow(object):
         # self.lineEdit2 = QLineEdit(MainWindow)
         # self.lineEdit2.setGeometry(140, 100, 200, 30)  # 设置输入框位置和大小
         # self.lineEdit2.setPlaceholderText("迭代次数")  # 设置提示文字
-        # 创建滑块
+        # 创建障碍物大小滑块
         slider = QSlider(MainWindow)
         slider.setGeometry(140, 100, 200, 30)  # 设置滑块位置和大小
         slider.setMinimum(5)  # 设置最小值
@@ -40,7 +42,7 @@ class Ui_MainWindow(object):
 
         # 创建标签用于显示滑块的值
         label_slider_value = QLabel("5", MainWindow)
-        label_slider_value.setGeometry(125, 100, 40, 30)  # 设置标签位置和大小
+        label_slider_value.setGeometry(350, 100, 40, 30)  # 设置标签位置和大小
 
         # 连接滑块数值改变的信号和槽
         slider.valueChanged.connect(lambda value: label_slider_value.setText(str(value)))
@@ -124,13 +126,243 @@ class Ui_MainWindow(object):
     def start_path(self, MainWindow, grid_widget):
         self.loginWindow_new = None
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(400, 300)
-        print()
+        MainWindow.setFixedSize(400, 300)
+        # 创建障选择算法标签
+        self.label_sum = QLabel("规划算法:", MainWindow)
+        self.label_sum.setGeometry(60, 50, 80, 30)  # 设置标签位置和大小
+
+        # 创建多选框
+        checkbox1 = QCheckBox("A*算法", MainWindow)
+        checkbox1.setGeometry(120, 50, 150, 30)  # 设置多选框位置和大小
+
+        checkbox2 = QCheckBox("RRT算法", MainWindow)
+        checkbox2.setGeometry(180, 50, 150, 30)  # 设置多选框位置和大小
+
+        checkbox2 = QCheckBox("APF算法", MainWindow)
+        checkbox2.setGeometry(250, 50, 150, 30)  # 设置多选框位置和大小
+        # 创建是否分析算法结果标签
+        self.label_analyse = QLabel("是否分析:", MainWindow)
+        self.label_analyse.setGeometry(60, 100, 80, 30)  # 设置标签位置和大小
+        # 创建单选按钮组
+        radio_button_group = QButtonGroup(MainWindow)
+        radio_button_group.setExclusive(True)  # 设置为互斥，只能选择一个单选按钮
+        # 创建是单选按钮
+        radio_button_ok = QRadioButton("是", MainWindow)
+        radio_button_ok.setGeometry(120, 100, 80, 30)  # 设置单选按钮位置和大小
+        radio_button_group.addButton(radio_button_ok)  # 将单选按钮添加到单选按钮组
+        # 创建是单选按钮
+        radio_button_no = QRadioButton("否", MainWindow)
+        radio_button_no.setGeometry(180, 100, 80, 30)  # 设置单选按钮位置和大小
+        radio_button_group.addButton(radio_button_no)  # 将单选按钮添加到单选按钮组
+
+        # 创建生成障碍物按钮
+        self.button_start = QPushButton("开始规划", MainWindow)
+        self.button_start.setGeometry(130, 250, 120, 30)  # 设置按钮位置和大小
+
+    # 随机障碍物提示输入障碍物数量窗口
+    def random_ob(self, MainWindow, grid_widget):
+        self.loginWindow_new = None
+        MainWindow.setObjectName("随机障碍物")
+        MainWindow.setFixedSize(300, 120)
+        # 创建障碍物数量标签
+        self.label_sum = QLabel("障碍物数量:", MainWindow)
+        self.label_sum.setGeometry(10, 20, 80, 30)  # 设置标签位置和大小
+        # 创建第一个输入框
+        self.lineEdit1 = QLineEdit(MainWindow)
+        self.lineEdit1.setGeometry(80, 20, 200, 30)  # 设置输入框位置和大小
+        self.lineEdit1.setPlaceholderText("请输入障碍物的数量")  # 设置提示文字
+        # 创建生成障碍物按钮
+        self.button_generate_obstacle = QPushButton("生成障碍物", MainWindow)
+        self.button_generate_obstacle.setGeometry(90, 60, 120, 30)  # 设置按钮位置和大小
+        label_notice = QLabel("", MainWindow)
+        label_notice.setGeometry(90, 90, 150, 30)  # 设置标签位置和大小
+
+        def on_button_click():
+            obstacle_quantity = self.lineEdit1.text()
+            if not obstacle_quantity:
+                label_notice.setText("请输入障碍物数量！")
+                return
+            grid_widget.random_graph_new(int(obstacle_quantity))
+            label_notice.setText("障碍物生成成功！")
+        # 连接按钮的点击信号
+        self.button_generate_obstacle.clicked.connect(on_button_click)
+
+    # 路径规划选择算法
+    def select_arithmetic(self, MainWindow, grid_widget):
+        self.loginWindow_new = None
+        MainWindow.setObjectName("MainWindow")
+        MainWindow.setFixedSize(300, 120)
+        # 创建选择算法标签
+        self.label_analyse = QLabel("选择算法:", MainWindow)
+        self.label_analyse.setGeometry(30, 30, 80, 30)  # 设置标签位置和大小
+        # 创建单选按钮组
+        radio_button_group = QButtonGroup(MainWindow)
+        radio_button_group.setExclusive(True)  # 设置为互斥，只能选择一个单选按钮
+        # 创建A*算法单选按钮
+        radio_button_astar = QRadioButton("AStar", MainWindow)
+        radio_button_astar.setGeometry(90, 30, 80, 30)  # 设置单选按钮位置和大小
+        radio_button_group.addButton(radio_button_astar)  # 将单选按钮添加到单选按钮组
+        # 创建RRT算法单选按钮
+        radio_button_rrt = QRadioButton("RRT", MainWindow)
+        radio_button_rrt.setGeometry(150, 30, 80, 30)  # 设置单选按钮位置和大小
+        radio_button_group.addButton(radio_button_rrt)  # 将单选按钮添加到单选按钮组
+        # 创建APF算法单选按钮
+        radio_button_apf = QRadioButton("APF", MainWindow)
+        radio_button_apf.setGeometry(210, 30, 80, 30)  # 设置单选按钮位置和大小
+        radio_button_group.addButton(radio_button_apf)  # 将单选按钮添加到单选按钮组
+        # 创建生成障碍物按钮
+        self.button_generate_obstacle = QPushButton("开始规划", MainWindow)
+        self.button_generate_obstacle.setGeometry(90, 60, 120, 30)  # 设置按钮位置和大小
+
+        label_notice = QLabel("", MainWindow)
+        label_notice.setGeometry(80, 90, 150, 30)  # 设置标签位置和大小
+
+        def on_button_click():
+            if not radio_button_astar.isChecked() and not radio_button_rrt.isChecked() and not radio_button_apf.isChecked():
+                label_notice.setText("请选择规划路径所用算法！")
+                return
+            if radio_button_astar.isChecked():
+                obstacle_overlap = "Astar"
+                grid_widget.startAstar()
+            elif radio_button_rrt.isChecked():
+                obstacle_overlap = "RRT"
+                grid_widget.startRtt()
+            elif radio_button_apf.isChecked():
+                obstacle_overlap = "APF"
+                grid_widget.startApf()
+            label_notice.setText("正在规划路径！")
+
+        # 连接按钮的点击信号
+        self.button_generate_obstacle.clicked.connect(on_button_click)
+
+    # 地图分辨率调整
+    def map(self, MainWindow, grid_widget):
+        self.loginWindow_new = None
+        MainWindow.setObjectName("地图参数")
+        MainWindow.setFixedSize(300, 120)
+        # 创建障碍物数量标签
+        self.label_sum = QLabel("分辨率:", MainWindow)
+        self.label_sum.setGeometry(10, 20, 80, 30)  # 设置标签位置和大小
+        # 创建第一个输入框
+        self.lineEdit1 = QLineEdit(MainWindow)
+        self.lineEdit1.setGeometry(80, 20, 200, 30)  # 设置输入框位置和大小
+        self.lineEdit1.setPlaceholderText("请输入分辨率大小")  # 设置提示文字
+        # 创建生成障碍物按钮
+        self.button_modify = QPushButton("调整", MainWindow)
+        self.button_modify.setGeometry(90, 60, 60, 30)  # 设置按钮位置和大小
+        self.button_default = QPushButton("默认", MainWindow)
+        self.button_default.setGeometry(160, 60, 60, 30)  # 设置按钮位置和大小
+        label_notice = QLabel("", MainWindow)
+        label_notice.setGeometry(90, 90, 150, 30)  # 设置标签位置和大小
+
+        def on_button_click():
+            obstacle_quantity = self.lineEdit1.text()
+            if not obstacle_quantity:
+                label_notice.setText("请输入地图分辨率！")
+                return
+            grid_widget.modifyMap(int(obstacle_quantity))
+            label_notice.setText("分辨率修改成功！")
+        def on_button_default():
+            print("默认地图")
+        # 连接按钮的点击信号
+        self.button_modify.clicked.connect(on_button_click)
+
+    # 起始点输入窗口
+    def input_startAndEnd(self, MainWindow, grid_widget):
+        self.loginWindow_new = None
+        MainWindow.setObjectName("地图起始点")
+        MainWindow.setFixedSize(300, 160)
+        # 创建起点标签
+        self.label_start = QLabel("起点:", MainWindow)
+        self.label_start.setGeometry(10, 20, 80, 30)  # 设置标签位置和大小
+        # 创建第一个输入框
+        self.lineEdit1 = QLineEdit(MainWindow)
+        self.lineEdit1.setGeometry(80, 20, 200, 30)  # 设置输入框位置和大小
+        self.lineEdit1.setPlaceholderText("请输入起点（x，y）")  # 设置提示文字
+        # 创建起点标签
+        self.label_end = QLabel("终点:", MainWindow)
+        self.label_end.setGeometry(10, 60, 80, 30)  # 设置标签位置和大小
+        # 创建第一个输入框
+        self.lineEdit2 = QLineEdit(MainWindow)
+        self.lineEdit2.setGeometry(80, 60, 200, 30)  # 设置输入框位置和大小
+        self.lineEdit2.setPlaceholderText("请输入起点（x，y）")  # 设置提示文字
+
+        # 创建生成起始点按钮
+        self.button_modify = QPushButton("生成", MainWindow)
+        self.button_modify.setGeometry(120, 100, 60, 30)  # 设置按钮位置和大小
+        label_notice = QLabel("", MainWindow)
+        label_notice.setGeometry(100, 120, 150, 30)  # 设置标签位置和大小
+
+        def on_button_click():
+            start = self.lineEdit1.text()
+            end = self.lineEdit2.text()
+
+            # TODO 起始点坐标获取以及调用方法未完成
+            if not start and not end:
+                label_notice.setText("请输入起始点坐标！")
+                return
+
+            print(start)
+            pattern = r"\((\d+),(\d+)\)"  # 匹配坐标的正则表达式模式
+            match = re.match(pattern, start)
+            print(match)
+            if match:
+                keyx = int(match.group(1))  # 提取横坐标
+                keyy = int(match.group(2))  # 提取纵坐标
+                print("起点横坐标:", keyx)
+                print("起点纵坐标:", keyy)
+                grid_widget.painting_ori(keyx, keyy)  # 目前执行到这里程序就结束了，应该是调用有问题
+            else:
+                print("坐标格式不正确")
+            match_2 = re.match(pattern, end)
+            if match_2:
+                # global keyx_2, keyy_2
+                keyx_2 = int(match_2.group(1))  # 提取横坐标
+                keyy_2 = int(match_2.group(2))  # 提取纵坐标
+                print("终点横坐标:", keyx_2)
+                print("终点纵坐标:", keyy_2)
+                grid_widget.painting_end(keyx_2, keyy_2)
+            else:
+                print("坐标格式不正确")
+            label_notice.setText("输入起始点生成成功！")
+        # 连接按钮的点击信号
+        self.button_modify.clicked.connect(on_button_click)
+
+    # 选择图形障碍物生成窗口 单个生成
+    def graph_ob(self, MainWindow, grid_widget):
+        self.loginWindow_new = None
+        MainWindow.setObjectName("图形障碍物")
+        MainWindow.setFixedSize(300, 120)
+        # 创建起点标签
+        self.label_graph = QLabel("障碍物类型:", MainWindow)
+        self.label_graph.setGeometry(60, 20, 80, 30)  # 设置标签位置和大小
+        # 创建下拉列表
+        self.combo_box = QComboBox(MainWindow)
+        self.combo_box.setGeometry(130, 20, 120, 30)  # 设置下拉列表位置和大小
+        self.combo_box.addItem("矩形")
+        self.combo_box.addItem("圆形")
+        self.combo_box.addItem("三角形")
+        self.combo_box.addItem("椭圆形")
+        self.combo_box.addItem("菱形")
+        self.combo_box.addItem("五角形")
+        # 创建生成障碍物按钮
+        self.button_modify = QPushButton("生成", MainWindow)
+        self.button_modify.setGeometry(90, 60, 120, 30)  # 设置按钮位置和大小
+        label_notice = QLabel("", MainWindow)
+        label_notice.setGeometry(90, 90, 150, 30)  # 设置标签位置和大小
+
+        # 按钮点击事件处理函数
+        def on_button_click():
+            selected_index = self.combo_box.currentIndex()
+            grid_widget.paint_random_one(selected_index+1)
+            label_notice.setText("障碍物生成成功！")
+        # 连接按钮的点击信号到处理函数
+        self.button_modify.clicked.connect(on_button_click)
 
     def setupUi(self, MainWindow, grid_widget):
         self.loginWindow_new = None
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1006, 850)
+        MainWindow.resize(1100, 850)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("./img/logo.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         MainWindow.setWindowIcon(icon)
@@ -139,19 +371,19 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
         MainWindow.setSizePolicy(sizePolicy)
-        MainWindow.setMinimumSize(QtCore.QSize(1000, 850))
-        MainWindow.setMaximumSize(QtCore.QSize(1000, 850))
+        MainWindow.setMinimumSize(QtCore.QSize(1100, 850))
+        MainWindow.setMaximumSize(QtCore.QSize(1100, 850))
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        # 横坐标输入框
-        self.text_input = QtWidgets.QLineEdit(self.centralwidget)
-        self.text_input.setPlaceholderText("输入起始点横纵坐标(x,y):")
-        self.text_input.setGeometry(QtCore.QRect(430, 425, 200, 25))
-        text = self.text_input.text()
-        # 纵坐标输入框
-        self.text_input_2 = QtWidgets.QLineEdit(self.centralwidget)
-        self.text_input_2.setPlaceholderText("输入终点横纵坐标(x,y):")
-        self.text_input_2.setGeometry(QtCore.QRect(640, 425, 200, 25))
+        # # 横坐标输入框
+        # self.text_input = QtWidgets.QLineEdit(self.centralwidget)
+        # self.text_input.setPlaceholderText("输入起始点横纵坐标(x,y):")
+        # self.text_input.setGeometry(QtCore.QRect(430, 425, 200, 25))
+        # text = self.text_input.text()
+        # # 纵坐标输入框
+        # self.text_input_2 = QtWidgets.QLineEdit(self.centralwidget)
+        # self.text_input_2.setPlaceholderText("输入终点横纵坐标(x,y):")
+        # self.text_input_2.setGeometry(QtCore.QRect(640, 425, 200, 25))
         # 清除地图方法图形按钮
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton.setGeometry(QtCore.QRect(130, 425, 75, 25))
@@ -173,31 +405,31 @@ class Ui_MainWindow(object):
         # 地图栅格方法
         self.pushButton_3.clicked.connect(self.grid_widget.rasterize_map)
         self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(40, 20, 921, 401))
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(40, 20, 921, 450))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
         self.layout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setObjectName("layout")
         # 算法列表
-        self.combo_arithmetic = QtWidgets.QComboBox(self.centralwidget)
-        self.combo_arithmetic.setGeometry(QtCore.QRect(310, 425, 100, 25))
-        self.combo_arithmetic.setObjectName("combo_arithmetic")
-        self.combo_arithmetic.addItem("")
-        self.combo_arithmetic.addItem("")
-        self.combo_arithmetic.addItem("")
-        self.combo_arithmetic.addItem("")
-        self.combo_arithmetic.addItem("")
+        # self.combo_arithmetic = QtWidgets.QComboBox(self.centralwidget)
+        # self.combo_arithmetic.setGeometry(QtCore.QRect(310, 425, 100, 25))
+        # self.combo_arithmetic.setObjectName("combo_arithmetic")
+        # self.combo_arithmetic.addItem("")
+        # self.combo_arithmetic.addItem("")
+        # self.combo_arithmetic.addItem("")
+        # self.combo_arithmetic.addItem("")
+        # self.combo_arithmetic.addItem("")
         # 选择障碍物图形
-        self.combo_arithmetic_obs = QtWidgets.QComboBox(self.centralwidget)
-        self.combo_arithmetic_obs.setGeometry(QtCore.QRect(830, 455, 100, 25))
-        self.combo_arithmetic_obs.setObjectName("combo_arithmetic_obs")
-        self.combo_arithmetic_obs.addItem("")
-        self.combo_arithmetic_obs.addItem("")
-        self.combo_arithmetic_obs.addItem("")
-        self.combo_arithmetic_obs.addItem("")
-        self.combo_arithmetic_obs.addItem("")
-        self.combo_arithmetic_obs.addItem("")
-        self.combo_arithmetic_obs.addItem("")
+        # self.combo_arithmetic_obs = QtWidgets.QComboBox(self.centralwidget)
+        # self.combo_arithmetic_obs.setGeometry(QtCore.QRect(830, 455, 100, 25))
+        # self.combo_arithmetic_obs.setObjectName("combo_arithmetic_obs")
+        # self.combo_arithmetic_obs.addItem("")
+        # self.combo_arithmetic_obs.addItem("")
+        # self.combo_arithmetic_obs.addItem("")
+        # self.combo_arithmetic_obs.addItem("")
+        # self.combo_arithmetic_obs.addItem("")
+        # self.combo_arithmetic_obs.addItem("")
+        # self.combo_arithmetic_obs.addItem("")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 1006, 23))
@@ -213,6 +445,8 @@ class Ui_MainWindow(object):
         self.toolBar = QtWidgets.QToolBar(MainWindow)
         self.toolBar.setObjectName("toolBar")
         MainWindow.addToolBar(QtCore.Qt.ToolBarArea.TopToolBarArea, self.toolBar)
+        self.toolBar.setMovable(False)  # 设置工具栏为不可移动
+
 
         self.actionLoadTest = QtWidgets.QAction(MainWindow)
         self.actionLoadTest.setObjectName("actionLoadTest")
@@ -221,56 +455,73 @@ class Ui_MainWindow(object):
         self.actionExit.triggered.connect(self.loginOut)
         self.actionOpen = QtWidgets.QAction(MainWindow)
         self.actionOpen.setObjectName("actionOpen")
-        self.label_map = QtWidgets.QLabel(self.centralwidget)
-        self.label_map.setGeometry(QtCore.QRect(40, 455, 54, 21))
-        self.label_map.setObjectName("label_map")
-        self.label_map_block = QtWidgets.QLabel(self.centralwidget)
-        self.label_map_block.setGeometry(QtCore.QRect(320, 455, 70, 21))
-        self.label_map_block.setObjectName("label_map_block")
-        self.lineEdit = QtWidgets.QLineEdit(self.centralwidget)
-        self.lineEdit.setGeometry(QtCore.QRect(85, 455, 51, 21))
-        self.lineEdit.setObjectName("lineEdit")
-        self.lineEdit.setText(str(10))
+        # self.label_map = QtWidgets.QLabel(self.centralwidget)
+        # self.label_map.setGeometry(QtCore.QRect(40, 425, 54, 21))
+        # self.label_map.setObjectName("label_map")
+        # self.label_map_block = QtWidgets.QLabel(self.centralwidget)
+        # self.label_map_block.setGeometry(QtCore.QRect(40, 455, 70, 21))
+        # self.label_map_block.setObjectName("label_map_block")
+        # self.lineEdit = QtWidgets.QLineEdit(self.centralwidget)
+        # self.lineEdit.setGeometry(QtCore.QRect(85, 425, 51, 21))
+        # self.lineEdit.setObjectName("lineEdit")
+        # self.lineEdit.setText(str(10))
         # 地图障碍物数量输入框
-        self.lineEdit_block = QtWidgets.QLineEdit(self.centralwidget)
-        self.lineEdit_block.setGeometry(QtCore.QRect(390, 455, 60, 23))
-        self.lineEdit_block.setObjectName("lineEdit_block")
-        self.lineEdit_block.setPlaceholderText("请输入障碍物的数量")
-        self.lineEdit_block.setText(str(10))
+        # self.lineEdit_block = QtWidgets.QLineEdit(self.centralwidget)
+        # self.lineEdit_block.setGeometry(QtCore.QRect(105, 455, 60, 23))
+        # self.lineEdit_block.setObjectName("lineEdit_block")
+        # self.lineEdit_block.setPlaceholderText("请输入障碍物的数量")
+        # self.lineEdit_block.setText(str(10))
         # 调整地图按钮
-        self.btn_modifyMap = QtWidgets.QPushButton(self.centralwidget)
-        self.btn_modifyMap.setGeometry(QtCore.QRect(150, 455, 75, 23))
-        self.btn_modifyMap.setObjectName("btn_modifyMap")
-        # 调整地图的粒度
-        self.btn_modifyMap.clicked.connect(lambda: grid_widget.modifyMap(int(self.lineEdit.text())))
-        # 默认地图按钮
-        self.btn_default = QtWidgets.QPushButton(self.centralwidget)
-        self.btn_default.setGeometry(QtCore.QRect(230, 455, 75, 23))
-        self.btn_default.setObjectName("btn_default")
+        # self.btn_modifyMap = QtWidgets.QPushButton(self.centralwidget)
+        # self.btn_modifyMap.setGeometry(QtCore.QRect(150, 425, 75, 23))
+        # self.btn_modifyMap.setObjectName("btn_modifyMap")
+        # # 调整地图的粒度
+        # self.btn_modifyMap.clicked.connect(lambda: grid_widget.modifyMap(int(self.lineEdit.text())))
+        # # 默认地图按钮
+        # self.btn_default = QtWidgets.QPushButton(self.centralwidget)
+        # self.btn_default.setGeometry(QtCore.QRect(230, 425, 75, 23))
+        # self.btn_default.setObjectName("btn_default")
         # 恢复地图默认粒度
         # self.btn_default.clicked.connect(grid_widget.defaultMap)
         # 打开地图的方法
         self.actionOpen.triggered.connect(grid_widget.open_map)
         # 输入起始点确认按钮
-        self.pushButton_4 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_4.setGeometry(QtCore.QRect(840, 425, 75, 25))
-        self.pushButton_4.setObjectName("pushButton_4")
-        self.pushButton_4.clicked.connect(self.ori_end_input)
+        # self.pushButton_4 = QtWidgets.QPushButton(self.centralwidget)
+        # self.pushButton_4.setGeometry(QtCore.QRect(840, 425, 75, 25))
+        # self.pushButton_4.setObjectName("pushButton_4")
+        # self.pushButton_4.clicked.connect(self.ori_end_input)
         # 随机障碍物按钮
         self.pushButton_5 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_5.setGeometry(QtCore.QRect(460, 455, 80, 23))
+        self.pushButton_5.setGeometry(QtCore.QRect(180, 455, 80, 23))
         self.pushButton_5.setObjectName("pushButton_5")
-        self.pushButton_5.clicked.connect(lambda:grid_widget.random_graph_new(int(self.lineEdit_block.text())))
+        # (lambda:grid_widget.random_graph_new(int(self.lineEdit_block.text())))
+        self.pushButton_5.clicked.connect(self.open_randomOb)
+
         # 随机起始点按钮
         self.pushButton_6 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_6.setGeometry(QtCore.QRect(550, 455, 80, 23))
         self.pushButton_6.setObjectName("pushButton_6")
         self.pushButton_6.clicked.connect(grid_widget.generateRandomStart)
-        # 开始规划按钮
+        # 分析规划按钮
         self.pushButton_7 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_7.setGeometry(QtCore.QRect(640, 455, 80, 23))
         self.pushButton_7.setObjectName("pushButton_7")
-        self.pushButton_7.clicked.connect(self.startPath) # 方法
+        self.pushButton_7.clicked.connect(self.open_start_path) # 方法
+        # 单路径规划
+        self.pushButton_plan = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_plan.setGeometry(QtCore.QRect(640, 455, 80, 23))
+        self.pushButton_plan.setObjectName("pushButton_plan")
+        self.pushButton_plan.clicked.connect(self.select_method) # 方法
+        # 地图调整
+        self.pushButton_modify_map = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_modify_map.setGeometry(QtCore.QRect(640, 455, 80, 23))
+        self.pushButton_modify_map.setObjectName("pushButton_modify_map")
+        self.pushButton_modify_map.clicked.connect(self.modify_map)  # 方法
+        # 输入起始点按钮
+        self.pushButton_input_startAndEnd = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_input_startAndEnd.setGeometry(QtCore.QRect(640, 455, 80, 23))
+        self.pushButton_input_startAndEnd.setObjectName("pushButton_input_startAndEnd")
+        self.pushButton_input_startAndEnd.clicked.connect(self.startAndEnd)  # 方法
         self.actionCreate = QtWidgets.QAction(MainWindow)
         self.actionCreate.setObjectName("actionCreate")
         # 点击菜单连接方法
@@ -298,7 +549,7 @@ class Ui_MainWindow(object):
         self.pushButton_paint_rand = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_paint_rand.setGeometry(QtCore.QRect(730, 454, 80, 25))
         self.pushButton_paint_rand.setObjectName("pushButton_paint_rand")
-        self.pushButton_paint_rand.clicked.connect(self.grid_widget.paint_random_one)
+        self.pushButton_paint_rand.clicked.connect(self.select_graph)
         # 参数障碍物按钮
         self.pushButton_ob = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_ob.setGeometry(QtCore.QRect(730, 454, 80, 25))
@@ -327,15 +578,75 @@ class Ui_MainWindow(object):
         self.toolBar.addAction(self.actionhelp)
         self.toolBar.addAction(self.actionArithmeticList)
         self.toolBar.addAction(self.actionExit)
+        # 侧边栏
+        self.sideToolBar = QtWidgets.QToolBar(MainWindow)
+        self.sideToolBar.setObjectName("sideToolBar")
+        # self.sideToolBar.setMovable(False)  # 设置工具栏为不可移动
+        MainWindow.addToolBar(QtCore.Qt.ToolBarArea.LeftToolBarArea, self.sideToolBar)
+        self.sideToolBar.addWidget(self.pushButton_plan)
+        self.sideToolBar.addWidget(self.pushButton_7)
+        self.sideToolBar.addWidget(self.pushButton_new)
+        self.sideToolBar.addWidget(self.pushButton_3)
+        self.sideToolBar.addWidget(self.pushButton)
+        self.sideToolBar.addWidget(self.pushButton_6)
+        self.sideToolBar.addWidget(self.pushButton_input_startAndEnd)
+        self.sideToolBar.addWidget(self.pushButton_paint_rand)
+        self.sideToolBar.addWidget(self.pushButton_ob)
+        self.sideToolBar.addWidget(self.pushButton_5)
+        self.sideToolBar.addWidget(self.pushButton_modify_map)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
         # self.grid_widget = grid_widget
+    # 图形障碍物窗口
+    def select_graph(self):
+        new_window = QtWidgets.QMainWindow()
+        ui.graph_ob(new_window, self.grid_widget)
+        new_window.setWindowTitle('图形障碍物')
+        new_window.show()
+        self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+    # 随机障碍物窗口
+    def open_randomOb(self):
+        new_window = QtWidgets.QMainWindow()
+        ui.random_ob(new_window, self.grid_widget)
+        new_window.setWindowTitle('随机障碍物')
+        new_window.show()
+        self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+
+    # 随机障碍物窗口
+    def startAndEnd(self):
+        new_window = QtWidgets.QMainWindow()
+        ui.input_startAndEnd(new_window, self.grid_widget)
+        new_window.setWindowTitle('输入起始点')
+        new_window.show()
+        self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+    # 随机障碍物窗口
+    def modify_map(self):
+        new_window = QtWidgets.QMainWindow()
+        ui.map(new_window, self.grid_widget)
+        new_window.setWindowTitle('随机障碍物')
+        new_window.show()
+        self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+    # 路径规划选择算法窗口
+    def select_method(self):
+        new_window = QtWidgets.QMainWindow()
+        ui.select_arithmetic(new_window, self.grid_widget)
+        new_window.setWindowTitle('仿真算法')
+        new_window.show()
+        self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
     # 打开参数障碍物窗口
     def open_modifyOb(self):
         new_window = QtWidgets.QMainWindow()
         ui.modify_obstacles(new_window, self.grid_widget)
         new_window.setWindowTitle('参数障碍物')
+        new_window.show()
+        self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+
+        # 打开参数障碍物窗口
+    def open_start_path(self):
+        new_window = QtWidgets.QMainWindow()
+        ui.start_path(new_window, self.grid_widget)
+        new_window.setWindowTitle('规划算法')
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
     # 文本框输出提示信息
@@ -415,29 +726,31 @@ class Ui_MainWindow(object):
         self.actionVersion.setText(_translate("MainWindow", "版本信息"))
         self.actionhelp.setText(_translate("MainWindow", "帮助手册"))
         self.actionmodel.setText(_translate("MainWindow", "下载地图模板"))
-        self.label_map.setText(_translate("MainWindow", "分辨率："))
-        self.label_map_block.setText(_translate("MainWindow", "随机障碍物："))
-        self.btn_modifyMap.setText(_translate("MainWindow", "调整"))
-        self.btn_default.setText(_translate("MainWindow", "默认"))
+        # self.label_map.setText(_translate("MainWindow", "分辨率："))
+        self.pushButton_plan.setText(_translate("MainWindow", "路径规划"))
+        # self.btn_modifyMap.setText(_translate("MainWindow", "调整"))
+        # self.btn_default.setText(_translate("MainWindow", "默认"))
         self.actionArithmeticList.setText(_translate("MainWindow", "算法列表"))
-        self.pushButton_4.setText(_translate("MainWindow", "生成"))
+        # self.pushButton_4.setText(_translate("MainWindow", "生成"))
         self.pushButton_5.setText(_translate("MainWindow", "随机障碍物"))
         self.pushButton_6.setText(_translate("MainWindow", "随机起始点"))
-        self.pushButton_7.setText(_translate("MainWindow", "开始规划"))
-        self.combo_arithmetic.setItemText(0, _translate("MainWindow", "请选择算法"))
-        self.combo_arithmetic.setItemText(1, _translate("MainWindow", "Astar"))
-        self.combo_arithmetic.setItemText(2, _translate("MainWindow", "RRT"))
-        self.combo_arithmetic.setItemText(3, _translate("MainWindow", "APF"))
-        self.combo_arithmetic.setItemText(4, _translate("MainWindow", "4"))
-        self.combo_arithmetic_obs.setItemText(0, _translate("MainWindow", "图形障碍物"))
-        self.combo_arithmetic_obs.setItemText(1, _translate("MainWindow", "矩形"))
-        self.combo_arithmetic_obs.setItemText(2, _translate("MainWindow", "圆形"))
-        self.combo_arithmetic_obs.setItemText(3, _translate("MainWindow", "三角形"))
-        self.combo_arithmetic_obs.setItemText(4, _translate("MainWindow", "椭圆形"))
-        self.combo_arithmetic_obs.setItemText(5, _translate("MainWindow", "菱形"))
-        self.combo_arithmetic_obs.setItemText(6, _translate("MainWindow", "五角形"))
+        self.pushButton_7.setText(_translate("MainWindow", "分析规划"))
+        # self.combo_arithmetic.setItemText(0, _translate("MainWindow", "请选择算法"))
+        # self.combo_arithmetic.setItemText(1, _translate("MainWindow", "Astar"))
+        # self.combo_arithmetic.setItemText(2, _translate("MainWindow", "RRT"))
+        # self.combo_arithmetic.setItemText(3, _translate("MainWindow", "APF"))
+        # self.combo_arithmetic.setItemText(4, _translate("MainWindow", "4"))
+        # self.combo_arithmetic_obs.setItemText(0, _translate("MainWindow", "图形障碍物"))
+        # self.combo_arithmetic_obs.setItemText(1, _translate("MainWindow", "矩形"))
+        # self.combo_arithmetic_obs.setItemText(2, _translate("MainWindow", "圆形"))
+        # self.combo_arithmetic_obs.setItemText(3, _translate("MainWindow", "三角形"))
+        # self.combo_arithmetic_obs.setItemText(4, _translate("MainWindow", "椭圆形"))
+        # self.combo_arithmetic_obs.setItemText(5, _translate("MainWindow", "菱形"))
+        # self.combo_arithmetic_obs.setItemText(6, _translate("MainWindow", "五角形"))
         self.pushButton_paint_rand.setText(_translate("MainWindow", "图形障碍物"))
         self.pushButton_ob.setText(_translate("MainWindow", "参数障碍物"))
+        self.pushButton_modify_map.setText(_translate("MainWindow", "地图调整"))
+        self.pushButton_input_startAndEnd.setText(_translate("MainWindow", "输入起始点"))
     # 路径规划
     def startPath(self):
         # 根据不同的算法

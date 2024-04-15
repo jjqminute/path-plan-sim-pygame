@@ -73,7 +73,7 @@ class PygameWidget(QWidget):
     OBS_COLOR = BLACK
     OBS_RADIUS = 5
     WIDTH = 920
-    HEIGHT = 390
+    HEIGHT = 450
     CELL_SIZE = 10
 
     def __init__(self, main_window, parent=None):
@@ -525,28 +525,10 @@ class PygameWidget(QWidget):
 
     # 画起始点
     def painting_ori(self, x, y):
-        # 绘画起点 这个和点击画起始点功能冲突 暂时分隔这两个功能，假设输入起始点前地图为空，所以直接填色即可
-        # 创建一个新的surface
-        # screen = pygame.Surface((self.width, self.height))
-        #
-        # # 设置背景颜色
-        # screen.fill(PygameWidget.WHITE)
-        #
-        # self.start_point = (x, y)
-        # self.win_main.printf("设置起点", x, y)
-        # if self.start_point:
-        #     pygame.draw.rect(screen, (0, 255, 0),
-        #                      (self.start_point[0], self.start_point[1], self.cell_size, self.cell_size), 0)
-        #     image = QImage(screen.get_buffer(), self.width, self.height, QImage.Format_RGB32)
-        #
-        #     # 将QImage转换为QPixmap
-        #     pixmap = QPixmap.fromImage(image)
-        #
-        #     # 使用QPainter绘制pixmap
-        #     painter = QPainter(self)
-        #     painter.drawPixmap(0, 0, pixmap)
-        #     painter.end()
-        #     # grid_widget.painting_ori(x,y)
+        # 输入新的起始点需要判断是否在之前已经生成起始点了，生成起始点就需要将原来的擦除以及self。start_point换成新的值
+        if(self.start_point != None):
+            pygame.draw.circle(self.obs_surface, (255, 255, 255), self.start_point, self.obs_radius)
+            self.start_point = None
         self.start_point = (x, y)
         self.main_window.printf("设置起点", x, y)
         if self.start_point:
@@ -554,28 +536,12 @@ class PygameWidget(QWidget):
             self.update()
 
     def painting_end(self, x1, y1):
+        if (self.end_point != None):
+            pygame.draw.circle(self.obs_surface, (255, 255, 255), self.end_point, self.obs_radius)
+            self.end_point = None
         # 绘画终点 假设输入终止点前地图为空，所以直接填色即可
         # 创建一个新的surface
         screen = pygame.Surface((self.width, self.height))
-
-        # 设置背景颜色
-        # screen.fill(PygameWidget.WHITE)
-        #
-        # self.end_point = (x1, y1)
-        # self.win_main.printf("设置终点", x1, y1)
-        # if self.end_point:
-        #     pygame.draw.rect(screen, (255, 0, 0),
-        #                      (self.end_point[0], self.end_point[1], self.cell_size, self.cell_size), 0)
-        #     image = QImage(screen.get_buffer(), self.width, self.height, QImage.Format_RGB32)
-        #
-        #     # 将QImage转换为QPixmap
-        #     pixmap = QPixmap.fromImage(image)
-        #
-        #     # 使用QPainter绘制pixmap
-        #     painter = QPainter(self)
-        #     painter.drawPixmap(0, 0, pixmap)
-        #     painter.end()
-        #     # grid_widget.painting_end(x1,y1)
         self.end_point = (x1, y1)
         self.main_window.printf("设置终点", x1, y1)
         if self.end_point:
@@ -683,8 +649,7 @@ class PygameWidget(QWidget):
         # return contours
 
     # 随机图形障碍物
-    def paint_random_one(self):
-        current_index = self.main_window.combo_arithmetic_obs.currentIndex()
+    def paint_random_one(self,current_index):
         if current_index == 1:
             pygame.draw.rect(self.obs_surface, BLACK, (100, 100, self.rect_size, self.rect_size))
         elif current_index == 2:
@@ -871,7 +836,7 @@ class PygameWidget(QWidget):
         return obstacles
 
     # 根据参数生成障碍物
-    def graph_setting(self,quantity, size,types, overlap):
+    def graph_setting(self,quantity, size, types, overlap):
         self.clear_map()  # 重置地图
         obstacles = []
         max_retries = 200  # 障碍物最大寻址次数，保证每个障碍物不重叠
@@ -947,7 +912,7 @@ class PygameWidget(QWidget):
             for _ in range(int(quantity)):
                 shape_type = random.choice(my_array)  # 0表示圆形，1表示矩形
                 if shape_type == 0:
-                    radius = int(size)
+                    radius = int(size)//2
                     x = random.randrange(radius, self.width - radius)
                     y = random.randrange(radius, self.height - radius)
                     pygame.draw.circle(self.obs_surface, self.obs_color, (x, y), radius)
