@@ -206,7 +206,8 @@ class PygameWidget(QWidget):
             x = point.x
             y = point.y
             track.append((x, y))
-        self.save_result(time1,track)
+        # self.save_result(time1,track)
+        return track, time1
 
     def startApf(self):
         self.result = None
@@ -218,28 +219,29 @@ class PygameWidget(QWidget):
             for k in range(len(self.result) - 1):
                 pygame.draw.line(self.plan_surface, (0, 100, 255), (self.result[k][0], self.result[k][1]),
                                  (self.result[k + 1][0], self.result[k + 1][1]), 3)
-        self.save_result(time1, self.result)
+        # self.save_result(time1, self.result)
+        return self.result,time1
 
-    def save_result(self, time1, track):
+    def save_result(self, time1, track, file_path):
         """
         保存结果文件，包括地图
         :param time1: 运行的时间
         :param track: 路径 [(x,y),(x,y),...]
         :return:
         """
-        # 创建文件对话框
-        dialog = QFileDialog()
-        # 设置文件对话框为保存文件模式
-        dialog.setAcceptMode(QFileDialog.AcceptSave)
-        # 设置对话框标题
-        dialog.setWindowTitle('保存地图')
-        # 设置文件过滤器
-        dialog.setNameFilter('地图文件 (*.txt)')
-        # 设置默认文件名，包含文件类型后缀
-        dialog.setDefaultSuffix('txt')
+        # # 创建文件对话框
+        # dialog = QFileDialog()
+        # # 设置文件对话框为保存文件模式
+        # dialog.setAcceptMode(QFileDialog.AcceptSave)
+        # # 设置对话框标题
+        # dialog.setWindowTitle('保存地图')
+        # # 设置文件过滤器
+        # dialog.setNameFilter('地图文件 (*.txt)')
+        # # 设置默认文件名，包含文件类型后缀
+        # dialog.setDefaultSuffix('txt')
 
         # 打开文件对话框，并返回保存的文件路径
-        file_path, _ = dialog.getSaveFileName(self, '保存地图', '', '地图文件 (*.txt)')
+        # file_path, _ = dialog.getSaveFileName(self, '保存地图', '', '地图文件 (*.txt)')
 
         if file_path is None:
             self.main_window.printf("路径未选择！", None, None)

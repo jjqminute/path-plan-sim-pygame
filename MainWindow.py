@@ -4,7 +4,7 @@ import threading
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QMainWindow, QMessageBox, QApplication, QFileDialog, QLineEdit, QLabel, QSlider, \
-    QCheckBox, QButtonGroup, QRadioButton, QPushButton, QComboBox
+    QCheckBox, QButtonGroup, QRadioButton, QPushButton, QComboBox, QSpinBox
 from AlgorithmList import AlgorithmList
 from GridWidget import GridWidget
 from MapPygame import PygameWidget
@@ -191,7 +191,7 @@ class Ui_MainWindow(object):
     def select_arithmetic(self, MainWindow, grid_widget):
         self.loginWindow_new = None
         MainWindow.setObjectName("MainWindow")
-        MainWindow.setFixedSize(300, 120)
+        MainWindow.setFixedSize(300, 250)
         # 创建选择算法标签
         self.label_analyse = QLabel("选择算法:", MainWindow)
         self.label_analyse.setGeometry(30, 30, 80, 30)  # 设置标签位置和大小
@@ -210,27 +210,96 @@ class Ui_MainWindow(object):
         radio_button_apf = QRadioButton("APF", MainWindow)
         radio_button_apf.setGeometry(210, 30, 80, 30)  # 设置单选按钮位置和大小
         radio_button_group.addButton(radio_button_apf)  # 将单选按钮添加到单选按钮组
+        # 保存结果部分
+        label_result = QLabel("是否保存结果:", MainWindow)
+        label_result.setGeometry(30, 60, 80, 30)
+        radio_button_result = QButtonGroup(MainWindow)
+        radio_button_result.setExclusive(True)
+        radio_button_result_true = QRadioButton("是", MainWindow)
+        radio_button_result_true.setGeometry(110, 60, 80, 30)
+        radio_button_result.addButton(radio_button_result_true)
+        radio_button_result_false = QRadioButton("否", MainWindow)
+        radio_button_result_false.setGeometry(170, 60, 80, 30)
+        radio_button_result_false.setChecked(True)  # 默认是不保存结果
+        radio_button_result.addButton(radio_button_result_false)
+        # 运行次数部分
+        label_run = QLabel("是否运行多次:", MainWindow)
+        label_run.setGeometry(30, 90, 80, 30)
+        radio_button_run = QButtonGroup(MainWindow)
+        radio_button_run.setExclusive(True)
+        radio_button_run_true = QRadioButton("是", MainWindow)
+        radio_button_run_true.setGeometry(110, 90, 80, 30)
+        radio_button_run.addButton(radio_button_run_true)
+        radio_button_run_false = QRadioButton("否", MainWindow)
+        radio_button_run_false.setGeometry(170, 90, 80, 30)
+        radio_button_run_false.setChecked(True)  # 默认是只运行一次
+        radio_button_run.addButton(radio_button_run_false)
+        # 设置结果文件名称的部分
+        label_path = QLabel("",MainWindow)
+        label_path.setGeometry(30, 120, 200, 30)
+        line_edit_result = QLineEdit("", MainWindow)
+        line_edit_result.setPlaceholderText("请输入文件名")
+        line_edit_result.setGeometry(90, 150, 120, 30)
+        line_edit_result.hide()  # 默认是不保存结果,所以先隐藏
+        # 选择运行次数部分
+        spin_box = QSpinBox(MainWindow)  # 数字选择框
+        spin_box.setGeometry(30, 180, 50, 30)
+        spin_box.setMinimum(0)  # 设置最小值
+        spin_box.setMaximum(100)  # 设置最大值
+        spin_box.setValue(1)  # 设置默认值
+        spin_box.hide()  # 默认是运行一次,所以先隐藏
+        def on_result_click(button):
+            if button == radio_button_result_true:
+                select_folder = QFileDialog.getExistingDirectory(MainWindow, "选择文件夹", "")
+                label_path.setText(select_folder)
+                line_edit_result.show()
+            else:
+                line_edit_result.hide()
+        radio_button_result.buttonClicked.connect(on_result_click)
+        def on_run_click(button):
+            if button == radio_button_run_true:
+                spin_box.show()
+            else:
+                spin_box.hide()
+        radio_button_run.buttonClicked.connect(on_run_click)
         # 创建生成障碍物按钮
         self.button_generate_obstacle = QPushButton("开始规划", MainWindow)
-        self.button_generate_obstacle.setGeometry(90, 60, 120, 30)  # 设置按钮位置和大小
+        self.button_generate_obstacle.setGeometry(90, 180, 120, 30)  # 设置按钮位置和大小
 
         label_notice = QLabel("", MainWindow)
-        label_notice.setGeometry(80, 90, 150, 30)  # 设置标签位置和大小
+        label_notice.setGeometry(80, 210, 150, 30)  # 设置标签位置和大小
 
         def on_button_click():
             if not radio_button_astar.isChecked() and not radio_button_rrt.isChecked() and not radio_button_apf.isChecked():
                 label_notice.setText("请选择规划路径所用算法！")
                 return
-            if radio_button_astar.isChecked():
-                obstacle_overlap = "Astar"
-                grid_widget.startAstar()
-            elif radio_button_rrt.isChecked():
-                obstacle_overlap = "RRT"
-                grid_widget.startRtt()
-            elif radio_button_apf.isChecked():
-                obstacle_overlap = "APF"
-                grid_widget.startApf()
-            label_notice.setText("正在规划路径！")
+            # 检测路径是否合法
+            if label_path.text() == "":
+                label_notice.setText("请选择文件!")
+                radio_button_result_false.setChecked(True)
+                return
+            # 获取循环次数
+            if radio_button_run_true.isChecked():
+                spin_box_value = spin_box.value()
+            else:
+                spin_box_value = 1
+            for i in range(spin_box_value):
+                track = []  # 算法执行所得的路径
+                time = None  # 算法花费的时间
+                if radio_button_astar.isChecked():
+                    obstacle_overlap = "Astar"
+                    track, time = grid_widget.startAstar()
+                elif radio_button_rrt.isChecked():
+                    obstacle_overlap = "RRT"
+                    track, time = grid_widget.startRtt()
+                elif radio_button_apf.isChecked():
+                    obstacle_overlap = "APF"
+                    track, time = grid_widget.startApf()
+                label_notice.setText("正在规划路径！")
+                # 保存结果部分
+                if radio_button_result_true.isChecked():
+                    filepath = label_path.text()+"/"+line_edit_result.text()+str(i)+".txt"
+                    grid_widget.save_result(time1=time, track=track, file_path=filepath)
 
         # 连接按钮的点击信号
         self.button_generate_obstacle.clicked.connect(on_button_click)
