@@ -4,10 +4,11 @@ import threading
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QMainWindow, QMessageBox, QApplication, QFileDialog, QLineEdit, QLabel, QSlider, \
-    QCheckBox, QButtonGroup, QRadioButton, QPushButton, QComboBox, QSpinBox
+    QCheckBox, QButtonGroup, QRadioButton, QPushButton, QComboBox, QSpinBox, QVBoxLayout
 from AlgorithmList import AlgorithmList
 from GridWidget import GridWidget
 from MapPygame import PygameWidget
+from result import result_demo, load_demo
 
 
 class Ui_MainWindow(object):
@@ -155,6 +156,23 @@ class Ui_MainWindow(object):
         radio_button_no.setGeometry(180, 100, 80, 30)  # 设置单选按钮位置和大小
         radio_button_group.addButton(radio_button_no)  # 将单选按钮添加到单选按钮组
 
+        # 单次路径结果比较分析
+        button_single = QPushButton("单次路径结果比较分析", MainWindow)
+        def on_single_click():
+            # 创建文件对话框
+            dialog = QFileDialog()
+            # 设置文件对话框为保存文件模式
+            dialog.setAcceptMode(QFileDialog.AcceptSave)
+            # 设置对话框标题
+            dialog.setWindowTitle('打开结果文件')
+            # 设置文件过滤器
+            dialog.setNameFilter('Text Files (*.txt)')
+            # 设置默认文件名，包含文件类型后缀
+            dialog.setDefaultSuffix('txt')
+            files, _ = dialog.getOpenFileNames()
+            for index, f in enumerate(files):  # 循环选中的所有文件
+                self.open_result_single(index, f)
+        button_single.clicked.connect(on_single_click)
         # 创建生成障碍物按钮
         self.button_start = QPushButton("开始规划", MainWindow)
         self.button_start.setGeometry(130, 250, 120, 30)  # 设置按钮位置和大小
@@ -427,6 +445,32 @@ class Ui_MainWindow(object):
             label_notice.setText("障碍物生成成功！")
         # 连接按钮的点击信号到处理函数
         self.button_modify.clicked.connect(on_button_click)
+
+    def result_single(self, MainWindow, grid_widget, index, f):
+        """
+        结果分析窗口设计
+        :param MainWindow: 当前窗体
+        :param grid_widget: grid_widget
+        :param index: 当前是选中的第几个文件，用于调整窗体显示的位置
+        :param f: 文件的路径
+        :return: None
+        """
+        MainWindow.setGeometry(100 + 10 * index, 100 + 10 * index, 500, 400)
+        r = load_demo(f)
+        canvas = r.draw_track()
+        canvas.show()
+        label_time = QLabel("运行时间是：" + str(r.time), MainWindow)
+        label_smoothness = QLabel("路径平滑度是：" + str(r.smoothness), MainWindow)
+        label_path_length = QLabel("路径长度是：" + str(r.pathlen), MainWindow)
+        layout = QVBoxLayout()
+        layout.addWidget(canvas)
+        layout.addWidget(label_smoothness)
+        layout.addWidget(label_path_length)
+        layout.addWidget(label_time)
+        main_widget = QWidget(MainWindow)
+        main_widget.setLayout(layout)
+        MainWindow.setCentralWidget(main_widget)
+        MainWindow.show()
 
     def setupUi(self, MainWindow, grid_widget):
         self.loginWindow_new = None
@@ -718,6 +762,20 @@ class Ui_MainWindow(object):
         new_window.setWindowTitle('规划算法')
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+
+    def open_result_single(self, index, f):
+        """
+        打开单路径分析窗口。在分析路径的窗口里打开。
+        :param index:当前的文件是选中的第几个文件，用于调整窗口的位置
+        :param f:文件的路径
+        :return:None
+        """
+        new_window = QtWidgets.QMainWindow()
+        ui.result_single(new_window, self.grid_widget, index, f)
+        new_window.setWindowTitle('单路径分析')
+        new_window.show()
+        self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+
     # 文本框输出提示信息
     def printf(self, msg, x, y):
         if x is None and y is None:

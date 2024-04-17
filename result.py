@@ -2,6 +2,8 @@ import geojson
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from shapely import Polygon
 
 
@@ -89,6 +91,7 @@ class result_demo:
         画出路径
         :return:
         """
+        figure = plt.figure()
         self.draw_end()
         self.draw_start()
         self.draw_obstacles()
@@ -97,7 +100,7 @@ class result_demo:
         plt.gca().invert_yaxis()
         plt.gca().xaxis.tick_top()  # 将x轴刻度显示在上方
         plt.plot(a, b)
-        plt.show()
+        return FigureCanvas(figure)
 
     # -----------------------计算路径平滑度-----------------------------------
     def compute_curvature(self, x, y):
