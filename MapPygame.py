@@ -298,6 +298,7 @@ class PygameWidget(QWidget):
             properties = feature['properties']
             if geometry['type'] == 'Point' and properties['name'] == "\u8d77\u59cb\u70b9":
                 self.start_point = geometry['coordinates']
+
             if geometry['type'] == 'Point' and properties['name'] == "\u7ec8\u70b9":
                 self.end_point = geometry['coordinates']
             elif geometry['type'] == 'Polygon':
@@ -311,6 +312,12 @@ class PygameWidget(QWidget):
 
         for obs in obstacles:
             pygame.draw.polygon(self.obs_surface, PygameWidget.OBS_COLOR, obs)
+
+        # # 绘制起始点和终点
+        if self.start_point:
+            pygame.draw.circle(self.obs_surface, (0, 255, 0), self.start_point, self.obs_radius)
+        if self.end_point:
+            pygame.draw.circle(self.obs_surface, (255, 0, 0), self.end_point, self.obs_radius)
 
         # screen = pygame.Surface((self.width, self.height))
         #
