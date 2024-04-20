@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QWidget, QMainWindow, QMessageBox, QApplication, QFi
 from AlgorithmList import AlgorithmList
 from GridWidget import GridWidget
 from MapPygame import PygameWidget
-from result import result_demo, load_demo
+from result import load_demo, Category_Demo, Category_Compare
 
 
 class Ui_MainWindow(object):
@@ -158,24 +158,50 @@ class Ui_MainWindow(object):
 
         # 单次路径结果比较分析
         button_single = QPushButton("单次路径结果比较分析", MainWindow)
+        button_single.setGeometry(10, 10, 50, 30)
         def on_single_click():
             # 创建文件对话框
             dialog = QFileDialog()
-            # 设置文件对话框为保存文件模式
-            dialog.setAcceptMode(QFileDialog.AcceptSave)
             # 设置对话框标题
             dialog.setWindowTitle('打开结果文件')
             # 设置文件过滤器
             dialog.setNameFilter('Text Files (*.txt)')
             # 设置默认文件名，包含文件类型后缀
-            dialog.setDefaultSuffix('txt')
+            # dialog.setDefaultSuffix('txt')
             files, _ = dialog.getOpenFileNames()
             for index, f in enumerate(files):  # 循环选中的所有文件
                 self.open_result_single(index, f)
         button_single.clicked.connect(on_single_click)
+
+        # 多路径比较分析
+        button_category = QPushButton("多次路径比较分析", MainWindow)
+        button_category.setGeometry(10, 40, 50, 30)
+        def on_category_click():
+            dialog = QFileDialog()
+            dialog.setWindowTitle("选择要进行多次结果分析的文件夹")
+            dialog.setFileMode(QFileDialog.DirectoryOnly)
+            if dialog.exec_():
+                category = Category_Demo()  # 创建多结果类
+                category.read_file(dialog.selectedFiles()[0])  # 获取选择的文件夹的路径
+                self.open_result_category(category)
+        button_category.clicked.connect(on_category_click)
         # 创建生成障碍物按钮
         self.button_start = QPushButton("开始规划", MainWindow)
         self.button_start.setGeometry(130, 250, 120, 30)  # 设置按钮位置和大小
+
+        # 不同算法性能对比(多个多次路径比较分析)
+        button_category_compare = QPushButton("不同算法性能比较", MainWindow)
+        button_category_compare.setGeometry(10, 70, 50, 30)
+        def on_category_compare_click():
+            dialog = QFileDialog()
+            dialog.setWindowTitle("选择要进行性能对比的文件")
+            files, _ = dialog.getOpenFileNames()
+            if files:
+                compare = Category_Compare()
+                compare.read_category(files)
+                self.open_result_category_compare(compare)
+        button_category_compare.clicked.connect(on_category_compare_click)
+
 
     # 随机障碍物提示输入障碍物数量窗口
     def random_ob(self, MainWindow, grid_widget):
@@ -455,22 +481,119 @@ class Ui_MainWindow(object):
         :param f: 文件的路径
         :return: None
         """
-        MainWindow.setGeometry(100 + 10 * index, 100 + 10 * index, 500, 400)
+        MainWindow.setGeometry(100 + 10 * index, 100 + 10 * index, 500, 500)
         r = load_demo(f)
         canvas = r.draw_track()
-        canvas.show()
         label_time = QLabel("运行时间是：" + str(r.time), MainWindow)
         label_smoothness = QLabel("路径平滑度是：" + str(r.smoothness), MainWindow)
         label_path_length = QLabel("路径长度是：" + str(r.pathlen), MainWindow)
+        button_smoothness = QPushButton("展示曲率")
+        def on_button_click():
+            new_window = QtWidgets.QMainWindow()
+            curvature = r.draw_curvature()
+            new_window.setCentralWidget(curvature)
+            new_window.setWindowTitle('曲率展示')
+            new_window.show()
+            self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+        button_smoothness.clicked.connect(on_button_click)
         layout = QVBoxLayout()
         layout.addWidget(canvas)
         layout.addWidget(label_smoothness)
         layout.addWidget(label_path_length)
         layout.addWidget(label_time)
+        layout.addWidget(button_smoothness)
         main_widget = QWidget(MainWindow)
         main_widget.setLayout(layout)
         MainWindow.setCentralWidget(main_widget)
         MainWindow.show()
+
+    def result_category(self, MainWindow, grid_widget, category):
+        """
+        多次结果分析窗口设计
+        :param MainWindow: 窗口
+        :param grid_widget: grid_widget
+        :param category: 多次结果类
+        :return: None
+        """
+        MainWindow.setGeometry(100, 100, 500, 500)
+        button_path_compare = QPushButton("路径叠加")
+        def on_button_path_compare_click():
+            self.open_result_track_compare(category)
+        button_path_compare.clicked.connect(on_button_path_compare_click)
+        button_average = QPushButton("求平均值")
+        def on_button_average():
+            self.open_result_average(category)
+        button_average.clicked.connect(on_button_average)
+        layout = QVBoxLayout()
+        layout.addWidget(button_path_compare)
+        layout.addWidget(button_average)
+        main_widget = QWidget(MainWindow)
+        main_widget.setLayout(layout)
+        MainWindow.setCentralWidget(main_widget)
+        MainWindow.show()
+
+    def result_category_average(self, MainWindow, grid_widget, category):
+        """
+        多结果分析求平均值窗口设计
+        :param category:
+        :return:
+        """
+        MainWindow.setGeometry(100, 100, 500, 500)
+        label_smooth = QLabel("平均平滑度是："+str(category.ave_smooth))
+        label_time = QLabel("平均时间是："+str(category.ave_time))
+        label_path_length = QLabel("平均路径长度是："+str(category.ave_path_length))
+        textbox_name = QLineEdit("")
+        textbox_name.setPlaceholderText("请输入文件名")
+        button_save = QPushButton("保存结果")
+        def on_button_save_click():
+            dialog = QFileDialog()
+            dialog.setAcceptMode(QFileDialog.AcceptSave)
+            # 设置对话框标题
+            dialog.setWindowTitle('保存category')
+            # 设置文件过滤器
+            dialog.setNameFilter('category文件 (*.txt)')
+            # 设置默认文件名，包含文件类型后缀
+            dialog.setDefaultSuffix('txt')
+            # 打开文件对话框，并返回保存的文件路径
+            file_path, _ = dialog.getSaveFileName(MainWindow, '保存category', '', 'category文件 (*.txt)')
+            category.save_file(file_path, textbox_name.text())
+        button_save.clicked.connect(on_button_save_click)
+        layout = QVBoxLayout()
+        layout.addWidget(label_time)
+        layout.addWidget(label_path_length)
+        layout.addWidget(label_smooth)
+        layout.addWidget(textbox_name)
+        layout.addWidget(button_save)
+        main_widget = QWidget(MainWindow)
+        main_widget.setLayout(layout)
+        MainWindow.setCentralWidget(main_widget)
+
+    def result_category_compare(self, MainWindow, grid_widget, compare):
+        MainWindow.setGeometry(100, 100, 500, 500)
+        button_image = QPushButton("对比结果生成图片")
+        def on_button_image_click():
+            dialog = QFileDialog()
+            dialog.setAcceptMode(QFileDialog.AcceptSave)
+            dialog.setWindowTitle('保存表格')
+            dialog.setDefaultSuffix('png')
+            file_path, _ = dialog.getSaveFileName(MainWindow, '保存表格', '', '(*.png)')
+            compare.save_image(file_path)
+        button_image.clicked.connect(on_button_image_click)
+        button_csv = QPushButton("对比结果生成csv")
+        def on_button_csv_clink():
+            dialog = QFileDialog()
+            dialog.setAcceptMode(QFileDialog.AcceptSave)
+            dialog.setWindowTitle('保存表格')
+            dialog.setDefaultSuffix('csv')
+            file_path, _ = dialog.getSaveFileName(MainWindow, '保存表格', '', '(*.csv)')
+            compare.save_csv(file_path)
+        button_csv.clicked.connect(on_button_csv_clink)
+        layout = QVBoxLayout()
+        layout.addWidget(button_image)
+        layout.addWidget(button_csv)
+        main_widget = QWidget(MainWindow)
+        main_widget.setLayout(layout)
+        MainWindow.setCentralWidget(main_widget)
 
     def setupUi(self, MainWindow, grid_widget):
         self.loginWindow_new = None
@@ -777,6 +900,53 @@ class Ui_MainWindow(object):
         new_window = QtWidgets.QMainWindow()
         ui.result_single(new_window, self.grid_widget, index, f)
         new_window.setWindowTitle('单路径分析')
+        new_window.show()
+        self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+
+    def open_result_category(self, category):
+        """
+        打开多路径分析窗口。在分析路径的窗口打开。
+        :return:
+        """
+        new_window = QtWidgets.QMainWindow()
+        ui.result_category(new_window, self.grid_widget, category)
+        new_window.setWindowTitle('多路径分析')
+        new_window.show()
+        self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+
+    def open_result_track_compare(self, category):
+        """
+        打开多路径分析中路径叠加的窗口
+        :category:多结果
+        :return:None
+        """
+        new_window = QtWidgets.QMainWindow()
+        canvas = category.track_compare()
+        new_window.setCentralWidget(canvas)
+        new_window.setWindowTitle('多路径分析')
+        new_window.show()
+        self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+
+    def open_result_average(self, category):
+        """
+        打开多路径分析中计算平均值的窗口
+        :param category: 多结果
+        :return: None
+        """
+        new_window = QtWidgets.QMainWindow()
+        ui.result_category_average(new_window, self.grid_widget, category)
+        new_window.setWindowTitle('多路径分析')
+        new_window.show()
+        self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+    def open_result_category_compare(self, compare):
+        """
+        打开多算法比较信息的窗口
+        :param compare: 比较信息,包含多个category
+        :return: None
+        """
+        new_window = QtWidgets.QMainWindow()
+        ui.result_category_compare(new_window, self.grid_widget, compare)
+        new_window.setWindowTitle('多路径分析')
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
 
