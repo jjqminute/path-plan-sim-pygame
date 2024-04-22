@@ -117,7 +117,7 @@ class apf:
 
         return escape_x, escape_y
 
-    def plan(self):
+    def plan(self,plan_surface):
         # 寻找路径的方法
         current_point = self.start
         start_time = time.time()

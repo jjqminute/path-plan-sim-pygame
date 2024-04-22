@@ -254,6 +254,10 @@ class Ui_MainWindow(object):
         radio_button_apf = QRadioButton("APF", MainWindow)
         radio_button_apf.setGeometry(210, 30, 80, 30)  # 设置单选按钮位置和大小
         radio_button_group.addButton(radio_button_apf)  # 将单选按钮添加到单选按钮组
+
+        radio_button_RRTapf = QRadioButton("RRT-APF", MainWindow)
+        radio_button_RRTapf.setGeometry(210, 30, 80, 30)  # 设置单选按钮位置和大小
+        radio_button_group.addButton(radio_button_RRTapf)  # 将单选按钮添加到单选按钮组
         # 保存结果部分
         label_result = QLabel("是否保存结果:", MainWindow)
         label_result.setGeometry(30, 60, 80, 30)
@@ -314,7 +318,7 @@ class Ui_MainWindow(object):
         label_notice.setGeometry(80, 210, 150, 30)  # 设置标签位置和大小
 
         def on_button_click():
-            if not radio_button_astar.isChecked() and not radio_button_rrt.isChecked() and not radio_button_apf.isChecked():
+            if not radio_button_astar.isChecked() and not radio_button_rrt.isChecked() and not radio_button_apf.isChecked() and not radio_button_RRTapf:
                 label_notice.setText("请选择规划路径所用算法！")
                 return
             # 检测路径是否合法
@@ -339,6 +343,9 @@ class Ui_MainWindow(object):
                 elif radio_button_apf.isChecked():
                     obstacle_overlap = "APF"
                     track, time = grid_widget.startApf()
+                elif radio_button_RRTapf.isChecked():
+                    obstacle_overlap = "RRT-APF"
+                    track, time = grid_widget.startApfRrt()
                 label_notice.setText("正在规划路径！")
                 # 保存结果部分
                 if radio_button_result_true.isChecked():

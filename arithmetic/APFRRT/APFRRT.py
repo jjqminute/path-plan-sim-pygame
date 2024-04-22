@@ -383,7 +383,7 @@ class APFRRT():
                 end = time.time()
                 print("总花费时间为")
                 print(end - start)
-                return path
+                return path,middtimer - start
 
             # 绘制过程中的点和线
             if new_node:
@@ -393,4 +393,5 @@ class APFRRT():
                 QApplication.processEvents()  # 强制Qt处理事件队列（重绘）
         # 如果最大迭代次数后仍未找到路径，则返回空路径
         print("未找到路径！！！")
-        return []
+        endtime=time.time()
+        return [],start-endtime

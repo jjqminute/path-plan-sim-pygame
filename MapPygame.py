@@ -25,7 +25,7 @@ import numpy
 from arithmetic.APF.apf import apf
 from arithmetic.Astar.Map import Map
 from arithmetic.Astar.astar import astar
-from arithmetic.RRT.rrt import rrt
+from arithmetic.RRT.rrt import Rrt
 
 from result import Result_Demo
 
@@ -214,8 +214,8 @@ class PygameWidget(QWidget):
     # RRT算法
     def startRtt(self):
         self.result = None
-        self.search = rrt(self)
-        self.result, time1 = self.search.plan()
+        self.search = Rrt(self)
+        self.result, time1 = self.search.plan(self.plan_surface)
         if self.result is not None:
             for k in self.result:
                 pygame.draw.circle(self.plan_surface,(0,100,255),(k.x,k.y),3)
@@ -234,7 +234,7 @@ class PygameWidget(QWidget):
     def startApf(self):
         self.result = None
         self.search = apf(self)
-        self.result, time1 = self.search.plan()
+        self.result, time1 = self.search.plan(self.plan_surface)
         if self.result is not None:
             for k in self.result:
                 pygame.draw.circle(self.plan_surface, (0, 100, 255), (k[0], k[1]), 3)
@@ -243,7 +243,14 @@ class PygameWidget(QWidget):
                                  (self.result[k + 1][0], self.result[k + 1][1]), 3)
         # self.save_result(time1, self.result)
         return self.result,time1
+    def startApfRrt(self):
+        self.result = None
+        self.result,time = APFRRT(self).plan(self.plan_surface)
+        return self.result,time
 
+    def startPRm(self):
+        self.result = None
+        self.result = prm(self).plan(self.plan_surface)
     def save_result(self, time1, track, file_path):
         """
         保存结果文件，包括地图
@@ -299,13 +306,7 @@ class PygameWidget(QWidget):
             file.write(geojson_str)
         self.main_window.printf("地图和结果数据已成功保存！", None, None)
 
-    def startApfRrt(self):
-        self.result = None
-        self.result = APFRRT(self).plan(self.plan_surface)
 
-    def startPRm(self):
-        self.result = None
-        self.result = prm(self).plan(self.plan_surface)
     # 保存地图文件
     def save_map(self):
         # 创建文件对话框
