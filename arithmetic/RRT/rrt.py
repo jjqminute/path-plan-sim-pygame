@@ -1,11 +1,13 @@
 import math
 import time
 from random import random
+import pygame
+from PyQt5.QtWidgets import QApplication
 
 from .Node import point
 
 
-class rrt:
+class Rrt:
     def __init__(self, mapdata):
         self.start = point(mapdata.start_point[0], mapdata.start_point[1])
         self.end = point(mapdata.end_point[0], mapdata.end_point[1])
@@ -14,8 +16,8 @@ class rrt:
         self.obstacle = mapdata.obs_surface
         self.height = mapdata.height
         self.tree = []
-        self.step = 20
-        self.max_iterations = 10000;
+        self.step = 10
+        self.max_iterations = 10000
 
     def rand_point(self):
         x = random() * self.width
@@ -154,7 +156,7 @@ class rrt:
             curr[1] += vy
         return False
 
-    def plan(self):
+    def plan(self, plan_surface):
         """
         执行 RRT 算法，寻找从起点到目标点的路径。
 
@@ -182,17 +184,35 @@ class rrt:
                 path = [new_node]
                 current_node = new_node
                 print(new_node)
+
+                pygame.draw.circle(plan_surface, (0, 100, 255), (current_node.x, current_node.y), 2)
+                pygame.draw.line(plan_surface, (100, 0, 100), (current_node.x, current_node.y),
+                                 (self.end.x, self.end.y), 4)
+                QApplication.processEvents()
+
                 while current_node != self.start:
                     # 最终节点回溯整条路径
                     parent = current_node.father
+
+                    pygame.draw.line(plan_surface, (100, 0, 100), (parent.x, parent.y),
+                                     (current_node.x, current_node.y), 4)
+                    QApplication.processEvents()
+
                     path.append(parent)
                     current_node = parent
+
                 path.reverse()
                 end = time.time()
                 print("花费时间为")
                 print(end - start)
                 return path, end - start
 
+            # 绘制过程中的点和线
+            if new_node:
+                pygame.draw.circle(plan_surface, (0, 100, 255), (new_node.x, new_node.y), 2)
+                pygame.draw.line(plan_surface, (0, 100, 255), (new_node.father.x, new_node.father.y),
+                                 (new_node.x, new_node.y), 2)
+                QApplication.processEvents()  # 强制Qt处理事件队列（重绘）
         # 如果最大迭代次数后仍未找到路径，则返回空路径
         print("未找到路径！！！")
         return []

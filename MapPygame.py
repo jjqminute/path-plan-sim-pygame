@@ -12,6 +12,9 @@ from PyQt5.QtCore import QTimer
 import random
 import json
 import geojson
+import shapely.geometry
+# from collections import defaultdict
+# import geopandas as gpd
 from geojson import Point, Feature, FeatureCollection
 from collections import defaultdict
 import geopandas as gpd
@@ -26,6 +29,9 @@ from arithmetic.RRT.rrt import rrt
 
 from result import Result_Demo
 
+from arithmetic.RRT.rrt import Rrt
+from arithmetic.APFRRT.APFRRT import APFRRT
+from arithmetic.PRM.prm import prm
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
@@ -72,6 +78,7 @@ class PygameWidget(QWidget):
     BACK_COLOR = WHITE
     OBS_COLOR = BLACK
     OBS_RADIUS = 5
+    POINT_RADIUS = 5
     WIDTH = 920
     HEIGHT = 450
     CELL_SIZE = 10
@@ -91,24 +98,38 @@ class PygameWidget(QWidget):
         # 设置障碍物颜色
         self.obs_color = PygameWidget.OBS_COLOR
 
+        self.grid_color = PygameWidget.OBS_COLOR
+
         # 设置障碍物画笔半径
         self.obs_radius = PygameWidget.OBS_RADIUS
 
-        # 设置主平面，障碍物平面和路径规划平面
+        self.point_radius = PygameWidget.POINT_RADIUS
+
+        # 设置主平面，障碍物平面，路径规划平面和起点终点平面
         self.surface = pygame.Surface((self.width, self.height))
         self.obs_surface = pygame.Surface((self.width, self.height))
         self.plan_surface = pygame.Surface((self.width, self.height))
+        self.point_surface = pygame.Surface((self.width, self.height))
+
+        self.grid_surface = pygame.Surface((self.width, self.height))
 
         # 设置障碍物平面和路径规划平面的透明色
         self.obs_surface.set_colorkey(self.back_color)
         self.plan_surface.set_colorkey(self.back_color)
+        self.point_surface.set_colorkey(self.back_color)
+
+        self.grid_surface.set_colorkey(self.back_color)
+
         self.obs_surface.fill(self.back_color)
         self.plan_surface.fill(self.back_color)
+        self.point_surface.fill(self.back_color)
+
+        self.grid_surface.fill(self.back_color)
 
         # 栅格大小
         self.cell_size = PygameWidget.CELL_SIZE
 
-        # 初始化多边形轮廓存储的障碍物
+        # 初始化多边形轮廓存储的障碍物列表，每个障碍物是一个包含其所有顶点的列表
         self.obstacles = []
 
         # # 障碍物列表
@@ -134,6 +155,7 @@ class PygameWidget(QWidget):
         # 初始化状态
         self.drawing = False
         self.last_pos = None
+        self.grid = False
 
         self.main_window = main_window
         # 矩形初始位置和大小
@@ -180,14 +202,14 @@ class PygameWidget(QWidget):
     # A*算法
     def startAstar(self):
         self.result = None
-        #self.obs_surface.fill(PygameWidget.BACK_COLOR)
+        # self.obs_surface.fill(PygameWidget.BACK_COLOR)
         self.search = astar(self)
         self.result = self.search.process()
 
         if self.result is not None:
             for k in self.result:
-                pygame.draw.circle(self.plan_surface,(0,100,255),(k.x,k.y),3)
-                #time.sleep(0.1)
+                pygame.draw.circle(self.plan_surface, (0, 100, 255), (k.x, k.y), 3)
+                # time.sleep(0.1)
 
     # RRT算法
     def startRtt(self):
@@ -277,6 +299,13 @@ class PygameWidget(QWidget):
             file.write(geojson_str)
         self.main_window.printf("地图和结果数据已成功保存！", None, None)
 
+    def startApfRrt(self):
+        self.result = None
+        self.result = APFRRT(self).plan(self.plan_surface)
+
+    def startPRm(self):
+        self.result = None
+        self.result = prm(self).plan(self.plan_surface)
     # 保存地图文件
     def save_map(self):
         # 创建文件对话框
@@ -425,22 +454,26 @@ class PygameWidget(QWidget):
             print(pos)
             pygame.draw.circle(self.obs_surface, self.obs_color, pos, self.obs_radius)
         elif event.button() == Qt.RightButton:
-            self.drawing = True
             pos = (event.pos().x(), event.pos().y())
-            if self.obstacles != []:
-                if self.start_point is None and [event.pos().x(), event.pos().y()] not in self.obstacles[0]:
-                    if pos not in self.obstacles:
+            if self.obstacles:
+                # 判断起点存在且不在障碍物内部
+                if self.start_point is None:
+                    if all(not shapely.Polygon(item).contains(shapely.Point(list(pos))) for item in self.obstacles):
                         self.start_point = pos
                         print(self.start_point)
-                        pygame.draw.circle(self.obs_surface, (0, 255, 0), pos, self.obs_radius)
+                        pygame.draw.circle(self.point_surface, (0, 255, 0), pos, self.point_radius)
                         self.main_window.printf("设置起点", event.pos().x(), event.pos().y())
+                    else:
+                        self.main_window.text_result.append("起点不能设置在障碍物内部")
                 else:
-                    if self.start_point != pos and self.end_point == None:
-                        if pos not in self.obstacles:
+                    if self.start_point and self.start_point != pos and self.end_point is None:
+                        if all(not shapely.Polygon(item).contains(shapely.Point(list(pos))) for item in self.obstacles):
                             self.end_point = pos
                             print(self.end_point)
-                            pygame.draw.circle(self.obs_surface, (255, 0, 0), pos, self.obs_radius)
+                            pygame.draw.circle(self.point_surface, (255, 0, 0), pos, self.point_radius)
                             self.main_window.printf("设置终点", event.pos().x(), event.pos().y())
+                        else:
+                            self.main_window.text_result.append("终点不能设置在障碍物内部")
             else:
                 self.main_window.text_result.append("请添加障碍物后再设置起始点")
 
@@ -457,17 +490,29 @@ class PygameWidget(QWidget):
         if event.button() == Qt.LeftButton:
             self.drawing = False
             self.last_pos = None
+            self.get_obs_vertices()
 
     # 绘制pygame界面
     def paintEvent(self, event):
 
         self.surface.fill(PygameWidget.BACK_COLOR)
-        # if(len(self.obstacles)!=0):
-        #     #print(self.obstacles)
-        #     for obstacle in self.obstacles[0]:
-        #         pygame.draw.circle(self.obs_surface, (0, 0, 0), (obstacle[0], obstacle[1]), self.obs_radius)
-        self.surface.blit(self.plan_surface, (0, 0))
         self.surface.blit(self.obs_surface, (0, 0))
+        self.surface.blit(self.point_surface, (0, 0))
+        self.surface.blit(self.plan_surface, (0, 0))
+        if self.grid:
+            self.surface.blit(self.grid_surface, (0, 0))
+
+        # # 绘制障碍物
+        # for obstacle in self.obstacles:
+        #     pygame.draw.rect(screen, (0, 0, 0), (obstacle[0], obstacle[1], self.cell_size, self.cell_size), 0)
+        #
+        # # 绘制起始点和终点
+        # if self.start_point:
+        #     pygame.draw.rect(screen, (0, 255, 0),
+        #                      (self.start_point[0], self.start_point[1], self.cell_size, self.cell_size), 0)
+        # if self.end_point:
+        #     pygame.draw.rect(screen, (255, 0, 0),
+        #                      (self.end_point[0], self.end_point[1], self.cell_size, self.cell_size), 0)
 
         # 将pygame surface转换为QImage
         surface_string = pygame.image.tostring(self.surface, 'RGB')
@@ -519,18 +564,33 @@ class PygameWidget(QWidget):
         # obs_array = numpy.transpose(obs_array, (1, 0, 2))
         for y in range(self.rows):
             for x in range(self.cols):
-                if (x, y) == self.start_point or (x, y) == self.end_point :
+                if (x, y) == self.start_point or (x, y) == self.end_point:
                     continue
                 # 获取当前栅格对应的像素块
                 pixel_block = obs_array[x * self.cell_size:(x + 1) * self.cell_size,
                               y * self.cell_size:(y + 1) * self.cell_size]
 
                 # 检查像素块中是否存在非白色像素（障碍物）
-                if numpy.any(numpy.any(pixel_block == list(self.obs_color), axis=2)):
+                if numpy.any(numpy.any(pixel_block != list(self.back_color), axis=2)):
                     self.grid_map[x, y] = 1  # 标记为障碍物
                     rect = pygame.Rect(x * self.cell_size, y * self.cell_size, self.cell_size,
                                        self.cell_size)
                     pygame.draw.rect(self.obs_surface, self.obs_color, rect)
+
+        # 绘制格线
+        for y in range(self.rows + 1):
+            pygame.draw.line(self.grid_surface, self.grid_color, (0, y * self.cell_size),
+                             (self.width, y * self.cell_size))
+        for x in range(self.cols + 1):
+            pygame.draw.line(self.grid_surface, self.grid_color, (x * self.cell_size, 0),
+                             (x * self.cell_size, self.height))
+
+        # for y in range(0, self.height + 1, self.cell_size):
+        #     pygame.draw.line(self.grid_surface, self.grid_color, (0, y), (self.width, y))
+        # for x in range(0, self.width + 1, self.cell_size):
+        #     pygame.draw.line(self.grid_surface, self.grid_color, (x, 0), (x, self.height))
+
+        self.grid = True
 
     # 画起始点
     def painting_ori(self, x, y):
@@ -541,20 +601,36 @@ class PygameWidget(QWidget):
         self.start_point = (x, y)
         self.main_window.printf("设置起点", x, y)
         if self.start_point:
-            pygame.draw.circle(self.obs_surface, (0, 255, 0), (x, y), self.obs_radius)
+            pygame.draw.circle(self.point_surface, (0, 255, 0), (x, y), self.point_radius)
             self.update()
 
     def painting_end(self, x1, y1):
-        if (self.end_point != None):
-            pygame.draw.circle(self.obs_surface, (255, 255, 255), self.end_point, self.obs_radius)
-            self.end_point = None
         # 绘画终点 假设输入终止点前地图为空，所以直接填色即可
         # 创建一个新的surface
         screen = pygame.Surface((self.width, self.height))
+
+        # 设置背景颜色
+        # screen.fill(PygameWidget.WHITE)
+        #
+        # self.end_point = (x1, y1)
+        # self.win_main.printf("设置终点", x1, y1)
+        # if self.end_point:
+        #     pygame.draw.rect(screen, (255, 0, 0),
+        #                      (self.end_point[0], self.end_point[1], self.cell_size, self.cell_size), 0)
+        #     image = QImage(screen.get_buffer(), self.width, self.height, QImage.Format_RGB32)
+        #
+        #     # 将QImage转换为QPixmap
+        #     pixmap = QPixmap.fromImage(image)
+        #
+        #     # 使用QPainter绘制pixmap
+        #     painter = QPainter(self)
+        #     painter.drawPixmap(0, 0, pixmap)
+        #     painter.end()
+        #     # grid_widget.painting_end(x1,y1)
         self.end_point = (x1, y1)
         self.main_window.printf("设置终点", x1, y1)
         if self.end_point:
-            pygame.draw.circle(self.obs_surface, (255, 0, 0), (x1, y1), self.obs_radius)
+            pygame.draw.circle(self.point_surface, (255, 0, 0), (x1, y1), self.point_radius)
             self.update()
 
     # 修改地图分辨率[OK]
@@ -580,59 +656,78 @@ class PygameWidget(QWidget):
             # 生成随机的x和y坐标
             x = random.choice(range(0, self.width))
             y = random.choice(range(0, self.height))
-            if [x,y] not in self.obstacles:
-                self.start_point = (x,y)
-                print(self.start_point)
-                self.main_window.printf("添加起始点：", x, y)
-                pygame.draw.circle(self.obs_surface, (0, 255, 0), (x,y), self.obs_radius)
-                self.update()
+            # if [x, y] not in self.obstacles:
+            while any(shapely.Polygon(item).contains(shapely.Point([x, y])) for item in self.obstacles):
+                # 生成随机的x和y坐标
+                x = random.choice(range(0, self.width))
+                y = random.choice(range(0, self.height))
+            # if all(not shapely.Polygon(item).contains(shapely.Point([x, y])) for item in self.obstacles):
+            self.start_point = (x, y)
+            print(self.start_point)
+            self.main_window.printf("添加起始点：", x, y)
+            pygame.draw.circle(self.point_surface, (0, 255, 0), (x, y), self.point_radius)
+            self.update()
         else:
             self.main_window.printf("error: 已经设置起点！", None, None)
 
         if self.end_point is None and self.end_point != self.start_point:
             # 生成随机的x和y坐标
-            x_1 = random.choice(range(0, self.width ))
+            x_1 = random.choice(range(0, self.width))
             y_1 = random.choice(range(0, self.height))
-            if [x_1, y_1] not in self.obstacles:
-                self.end_point = (x_1, y_1)
-                pygame.draw.circle(self.obs_surface, (255, 0, 0), (x_1, y_1), self.obs_radius)
-                self.main_window.printf("添加终点：", y_1, x_1)
-                self.update()
+            while any(shapely.Polygon(item).contains(shapely.Point([x_1, y_1])) for item in self.obstacles):
+                # 生成随机的x和y坐标
+                x_1 = random.choice(range(0, self.width))
+                y_1 = random.choice(range(0, self.height))
+            # if [x_1, y_1] not in self.obstacles:
+            # if all(not shapely.Polygon(item).contains(shapely.Point([x_1, y_1])) for item in self.obstacles):
+            self.end_point = (x_1, y_1)
+            pygame.draw.circle(self.point_surface, (255, 0, 0), (x_1, y_1), self.point_radius)
+            self.main_window.printf("添加终点：", y_1, x_1)
+            self.update()
         else:
             self.main_window.printf("error: 已经设置终点！", None, None)
         self.update()
+
+    def update_obs_surface(self):
+        self.obs_surface.fill(self.back_color)
+        for obs in self.obstacles:
+            pygame.draw.polygon(self.obs_surface, self.obs_color, obs)
 
     # 清空地图方法[OK]
     def clear_map(self):
         self.start_point = None  # 清除起点
         self.end_point = None  # 清除终点
         self.obstacles = []  # 清空障碍物列表
+        self.obs_surface.fill(self.back_color)
+        self.plan_surface.fill(self.back_color)
+        self.point_surface.fill(self.back_color)
+        self.grid_surface.fill(self.back_color)
         self.update_map()
-        self.main_window.printf("已经清空地图", None, None)
-        self.update()  # 更新界面
+        self.main_window.printf("已经清空地图")
+        # self.update()  # 更新界面
 
     # 清空地图起始点[OK]
     def clearStartAndEnd(self):
         self.start_point = None  # 清除起点
         self.end_point = None  # 清除终点
         self.update_map()
-        self.main_window.printf("已经清空起始点", None, None)
+        self.main_window.printf("已经清空起始点")
         self.update()  # 更新界面
 
     #  更新地图界面方法[OK]
     def update_map(self):
-        # 清空surface
-        self.surface.fill(PygameWidget.BACK_COLOR)
         # 清空obs_surface
-        self.obs_surface.fill(PygameWidget.BACK_COLOR)
+        self.obs_surface.fill(self.back_color)
+        # 清空point_surface
+        self.point_surface.fill(self.back_color)
         # 清空plan_surface
-        self.plan_surface.fill(PygameWidget.BACK_COLOR)
+        self.plan_surface.fill(self.back_color)
 
     # 未栅格化地图障碍点获取
     def get_obs_vertices(self):
         capture_bgr = surface_to_cv_bgr(self.obs_surface)
         capture_gray = cv2.cvtColor(capture_bgr, cv2.COLOR_BGR2GRAY)
-        _, binary = cv2.threshold(capture_gray, 50, 255, cv2.THRESH_BINARY_INV)
+        _, binary = cv2.threshold(capture_gray, 254, 255, cv2.THRESH_BINARY_INV)
         contours, hierarchy = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         # for obs in contours:
@@ -643,9 +738,10 @@ class PygameWidget(QWidget):
 
         for obs in contours:
             obstacle = obs.squeeze().tolist()
-            pygame.draw.polygon(self.obs_surface, PygameWidget.OBS_COLOR, obstacle)
+            pygame.draw.polygon(self.obs_surface, self.obs_color, obstacle)
             self.obstacles.append(obstacle)
-        print(self.obstacles)
+
+        # print(self.obstacles)
 
         # cv2.drawContours(capture_bgr, contours, -1, (0, 0, 255), 2)
         # self.obs_surface = cv_bgr_to_surface(capture_bgr)
@@ -698,9 +794,10 @@ class PygameWidget(QWidget):
                 y = self.star_center[1] + self.star_outer_radius * math.sin(i * self.angle)
                 self.star_points.append((int(x), int(y)))
             pygame.draw.polygon(self.obs_surface, BLACK, self.star_points)
+        self.get_obs_vertices()
 
     #  随机多边形障碍物
-    def random_graph(self,count):
+    def random_graph(self, count):
         for _ in range(count):
             shape_type = random.randrange(6)  # 0表示圆形，1表示矩形
             if shape_type == 0:
@@ -779,13 +876,14 @@ class PygameWidget(QWidget):
                             (x + side_length // 2 + side_length * math.cos(angle), y + side_length * math.sin(angle)))
                 pygame.draw.polygon(self.obs_surface, self.obs_color, star_points)
 
-        self.main_window.text_result.append("成功生成 %s 个随机障碍物" %count)
+        self.get_obs_vertices()
+        self.main_window.text_result.append("成功生成 %s 个随机障碍物" % count)
 
     #  随机多边形不重叠障碍物
     def random_graph_new(self, count):
-        self.clear_map() # 重置地图
+        self.clear_map()  # 重置地图
         obstacles = []
-        max_retries = 200 # 障碍物最大寻址次数，保证每个障碍物不重叠
+        max_retries = 200  # 障碍物最大寻址次数，保证每个障碍物不重叠
 
         # 检查一个障碍物是否与障碍物列表中的任何障碍物重叠
         def is_overlapping(x, y, width, height):
@@ -842,6 +940,7 @@ class PygameWidget(QWidget):
                         break
                 retries += 1
 
+        self.get_obs_vertices()
         return obstacles
 
     # 根据参数生成障碍物
@@ -850,7 +949,7 @@ class PygameWidget(QWidget):
         obstacles = []
         max_retries = 200  # 障碍物最大寻址次数，保证每个障碍物不重叠
         my_array = types
-        if overlap == "F": # 不重叠障碍物
+        if overlap == "F":  # 不重叠障碍物
             # 检查一个障碍物是否与障碍物列表中的任何障碍物重叠
             def is_overlapping(x, y, width, height):
                 for obstacle in obstacles:
@@ -866,7 +965,7 @@ class PygameWidget(QWidget):
                     shape_type = random.choice(my_array)
                     if shape_type == 0:
                         # radius = random.randrange(10, 51)
-                        radius = int(size)//2 # 统一半径
+                        radius = int(size) // 2  # 统一半径
                         x = random.randrange(radius, self.width - radius)
                         y = random.randrange(radius, self.height - radius)
                         if not is_overlapping(x - radius, y - radius, 2 * radius, 2 * radius):
@@ -907,7 +1006,7 @@ class PygameWidget(QWidget):
                             break
                     elif shape_type == 4:
                         width = int(size)
-                        height = int(size)//2
+                        height = int(size) // 2
                         x = random.randrange(0, self.width - width)
                         y = random.randrange(0, self.height - height)
                         if not is_overlapping(x, y, width, height):
@@ -916,12 +1015,12 @@ class PygameWidget(QWidget):
                             break
                     retries += 1
 
-            return obstacles
-        elif overlap == "T": # 重叠障碍物
+
+        elif overlap == "T":  # 重叠障碍物
             for _ in range(int(quantity)):
                 shape_type = random.choice(my_array)  # 0表示圆形，1表示矩形
                 if shape_type == 0:
-                    radius = int(size)//2
+                    radius = int(size)
                     x = random.randrange(radius, self.width - radius)
                     y = random.randrange(radius, self.height - radius)
                     pygame.draw.circle(self.obs_surface, self.obs_color, (x, y), radius)
@@ -955,8 +1054,8 @@ class PygameWidget(QWidget):
                     y = random.randrange(0, self.height - height)
                     pygame.draw.rect(self.obs_surface, self.obs_color, (x, y, width, height))
 
-
-
+        self.get_obs_vertices()
+        return obstacles
 
 
 class MainWindow(QMainWindow):

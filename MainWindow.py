@@ -951,7 +951,7 @@ class Ui_MainWindow(object):
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
 
     # 文本框输出提示信息
-    def printf(self, msg, x, y):
+    def printf(self, msg, x=None, y=None):
         if x is None and y is None:
             self.text_result.append("%s" % msg)
         else:
@@ -1052,16 +1052,26 @@ class Ui_MainWindow(object):
         self.action_rasterization.setText(_translate("MainWindow", "栅格化"))
     # 路径规划
     def startPath(self):
+        self.grid_widget.plan_surface.fill((255, 255, 255))
+        if not self.grid_widget.obstacles or not self.grid_widget.start_point or not self.grid_widget.end_point:
+            self.printf("未设置障碍物或起始点或终点")
         # 根据不同的算法
-        if self.combo_arithmetic.currentText() == "Astar":
-            print("启动A星算法！！！")
-            self.grid_widget.startAstar()
-        elif self.combo_arithmetic.currentText() == "RRT":
-            print("启动RRT算法！！！")
-            self.grid_widget.startRtt()
-        elif self.combo_arithmetic.currentText() == "APF":
-            print("启动APF算法！！！")
-            self.grid_widget.startApf()
+        else:
+            if self.combo_arithmetic.currentText() == "Astar":
+                self.printf("启动A星算法！！！")
+                self.grid_widget.startAstar()
+            elif self.combo_arithmetic.currentText() == "RRT":
+                self.printf("启动RRT算法！！！")
+                self.grid_widget.start_rrt()
+            elif self.combo_arithmetic.currentText() == "APF":
+                self.printf("启动APF算法！！！")
+                self.grid_widget.startApf()
+            elif self.combo_arithmetic.currentText() == "APFRRT":
+                self.printf("启动APF-RRT算法！！！")
+                self.grid_widget.startApfRrt()
+            elif self.combo_arithmetic.currentText() == "PRM":
+                self.printf("启动PRM算法！！！")
+                self.grid_widget.startPRm()
 
     def ori_end_input(self):  # 输入起始点终点函数
         coordinate = self.text_input.text()

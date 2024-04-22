@@ -15,24 +15,19 @@ class point:  # 点类（每一个唯一坐标只有对应的一个实例）
         if point._tag:
             self.x = x
             self.y = y
-            self.cost = 0  # 父节点到此节点的消耗
+            self.father = None
         else:
             point._tag = True
 
-    def __hash__(self):
-        return hash((self.x, self.y))
-
-    def __eq__(self, other):
-        return self.x == other.x and self.y == other.y
     @classmethod
     def clear(cls):  # clear方法，每次搜索结束后，将所有点数据清除，以便进行下一次搜索的时候点数据不会冲突。
         point._list = []
 
-    # def __eq__(self, T):  # 重写==运算以便实现point类的in运算
-    #     if type(self) == type(T):
-    #         return (self.x, self.y) == (T.x, T.y)
-    #     else:
-    #         return False
+    def __eq__(self, T):  # 重写==运算以便实现point类的in运算
+        if type(self) == type(T):
+            return (self.x, self.y) == (T.x, T.y)
+        else:
+            return False
 
     def __str__(self):
-        return '(%d,%d)[cost=%d]' % (self.x, self.y,  self.cost)
+        return '(%d,%d)' % (self.x, self.y)

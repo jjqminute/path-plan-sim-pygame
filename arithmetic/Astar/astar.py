@@ -23,7 +23,7 @@ class astar:  # 核心部分，寻路类
         self.height = mapdata.height
         self.radius = mapdata.obs_radius
         # 尺寸暂定为1
-        self.cell_size = 1
+        self.cell_size = 10
         self.obstacles = mapdata.obstacles[0]
         self.mapdata = mapdata
         self.screen = mapdata.plan_surface
