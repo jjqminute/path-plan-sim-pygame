@@ -235,7 +235,7 @@ class Ui_MainWindow(object):
     def select_arithmetic(self, MainWindow, grid_widget):
         self.loginWindow_new = None
         MainWindow.setObjectName("MainWindow")
-        MainWindow.setFixedSize(300, 250)
+        MainWindow.resize(400, 250)
         # 创建选择算法标签
         self.label_analyse = QLabel("选择算法:", MainWindow)
         self.label_analyse.setGeometry(30, 30, 80, 30)  # 设置标签位置和大小
@@ -254,9 +254,9 @@ class Ui_MainWindow(object):
         radio_button_apf = QRadioButton("APF", MainWindow)
         radio_button_apf.setGeometry(210, 30, 80, 30)  # 设置单选按钮位置和大小
         radio_button_group.addButton(radio_button_apf)  # 将单选按钮添加到单选按钮组
-
+        # 创建RRT-APF算法单选按钮
         radio_button_RRTapf = QRadioButton("RRT-APF", MainWindow)
-        radio_button_RRTapf.setGeometry(210, 30, 80, 30)  # 设置单选按钮位置和大小
+        radio_button_RRTapf.setGeometry(270, 30, 80, 30)  # 设置单选按钮位置和大小
         radio_button_group.addButton(radio_button_RRTapf)  # 将单选按钮添加到单选按钮组
         # 保存结果部分
         label_result = QLabel("是否保存结果:", MainWindow)
@@ -322,7 +322,7 @@ class Ui_MainWindow(object):
                 label_notice.setText("请选择规划路径所用算法！")
                 return
             # 检测路径是否合法
-            if label_path.text() == "":
+            if radio_button_result_true.isChecked() and label_path.text() == "":
                 label_notice.setText("请选择文件!")
                 radio_button_result_false.setChecked(True)
                 return

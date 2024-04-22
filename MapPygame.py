@@ -246,7 +246,10 @@ class PygameWidget(QWidget):
     def startApfRrt(self):
         self.result = None
         self.result,time = APFRRT(self).plan(self.plan_surface)
-        return self.result,time
+        track = []
+        for point in self.result[:-1]:
+            track.append((point.x, point.y))
+        return track, time
 
     def startPRm(self):
         self.result = None

@@ -127,7 +127,6 @@ class Result_Demo:
         # 计算平均曲率作为路径平滑度的指标
         average_curvature = np.mean(curvature)
         self.smoothness = average_curvature
-        print(f"路径平滑度: {self.smoothness}")
 
     def draw_curvature(self):
         # 绘制曲率
