@@ -24,20 +24,7 @@ class prm:
         self.edges = []
         self.step = 30
 
-    def is_goal_reached(self, node, goal_point, tolerance):
-        """
-        检查当前节点是否已经接近目标点。
 
-        Args:
-        - node: 要检查的当前节点 (点)。
-        - goal_point: 要检查的目标点 (x, y)。
-        - tolerance: 用于判断是否达到目标的容差距离。
-
-        Returns:
-        - reached: 如果达到目标，则为True，否则为False。
-        """
-        distance_to_goal = self.dist((node.x, node.y), goal_point)
-        return distance_to_goal <= tolerance
 
     def dist(self, p1, p2):
         # 两点距离
