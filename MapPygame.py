@@ -253,7 +253,12 @@ class PygameWidget(QWidget):
 
     def startPRm(self):
         self.result = None
-        self.result = prm(self).plan(self.plan_surface)
+        self.result,time = prm(self).plan(self.plan_surface)
+        track = []
+        for point in self.result[:-1]:
+            track.append((point.x, point.y))
+        return track, time
+
     def save_result(self, time1, track, file_path):
         """
         保存结果文件，包括地图

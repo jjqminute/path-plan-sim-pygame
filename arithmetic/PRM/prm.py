@@ -3,67 +3,26 @@ import time
 from random import random
 import pygame
 from PyQt5.QtWidgets import QApplication
+from scipy.spatial import KDTree
+import copy
 from .Node import point
 import heapq
 
-class PriorityQueue:
-    def __init__(self):
-        self.elements = []
 
-    def empty(self):
-        return len(self.elements) == 0
 
-    def put(self, item, priority):
-        heapq.heappush(self.elements, (priority, item))
 
-    def get(self):
-        return heapq.heappop(self.elements)[1]
-
-def heuristic(a, b):
-    # 启发式函数，用于估算节点a到目标节点b的距离
-    # 这里使用欧几里得距离作为启发式函数
-    return abs(a.x - b.x) + abs(a.y - b.y)
-
-def a_star_search(graph, start, end):
-    # graph是一个字典，键是节点，值是相邻的节点列表
-    # start和end分别是起点和终点节点
-
-    frontier = PriorityQueue()
-    frontier.put((start, 0), 0)
-
-    came_from = {}  # 记录每个节点是如何到达的
-    cost_so_far = {}  # 记录从起点到当前节点的累积代价
-
-    came_from[start] = None
-    cost_so_far[start] = 0
-
-    while not frontier.empty():
-        current = frontier.get()
-
-        if current == end:
-            break
-
-        for next in graph[current]:
-            new_cost = cost_so_far[current] + graph[current][next]
-            if next not in cost_so_far or new_cost < cost_so_far[next]:
-                cost_so_far[next] = new_cost
-                priority = new_cost + heuristic(next, end)
-                frontier.put((next, priority), priority)
-                came_from[next] = current
-
-    return came_from, cost_so_far
 class prm:
-    def __init__(self,mapdata):
+    def __init__(self, mapdata):
         self.start = point(mapdata.start_point[0], mapdata.start_point[1])
         self.end = point(mapdata.end_point[0], mapdata.end_point[1])
         self.result = []
         self.width = mapdata.width
         self.height = mapdata.height
         self.obstacle = mapdata.obs_surface
-        self.max_point_num=200
-        self.nodes=[self.start,self.end]
-        self.edges=[]
-        self.step=50
+        self.max_point_num = 1000
+        self.nodes = [self.start, self.end]
+        self.edges = []
+        self.step = 30
 
     def is_goal_reached(self, node, goal_point, tolerance):
         """
@@ -81,7 +40,7 @@ class prm:
         return distance_to_goal <= tolerance
 
     def dist(self, p1, p2):
-        #两点距离
+        # 两点距离
         return math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2)
 
     def collision(self, src, dst):
@@ -97,7 +56,7 @@ class prm:
             - collided: 如果发生碰撞，则为 True，否则为 False。
             """
         vx, vy = self.normalize(dst.x - src.x, dst.y - src.y)
-        curr = src
+        curr = copy.deepcopy(src)
         while self.dist(curr, dst) > 1:
             int_curr = int(curr.x), int(curr.y)
             if self.obstacle.get_at(int_curr) == (0, 0, 0):
@@ -106,7 +65,7 @@ class prm:
             curr.y += vy
         return False
 
-    #方向向量
+    # 方向向量
     def normalize(self, vx, vy):
         """
         将输入向量标准化，并返回其坐标。
@@ -131,9 +90,9 @@ class prm:
     def generate_random_points(self):
         x = random() * self.width
         y = random() * self.height
-        return point(x,y)
+        return point(x, y)
 
-    def is_obstacle(self,current):
+    def is_obstacle(self, current):
         int_curr = int(current.x), int(current.y)
         if self.obstacle.get_at(int_curr) == (0, 0, 0):
             return True
@@ -141,47 +100,120 @@ class prm:
             return False
 
     def connect_nodes(self):
-        for i in range(len(self.nodes)):
-            for j in range(i + 1, len(self.nodes)):
-                if not self.collision(self.nodes[i], self.nodes[j]) and self.dist(self.nodes[j], self.nodes[i])<=self.step:
-                    self.edges.append((self.nodes[i], self.nodes[j]))
+        # 使用KD树快速搜索最近邻节点
+        kdtree = KDTree([(node.x, node.y) for node in self.nodes])
+        for node in self.nodes:
 
-    def plan(self,plan_surface):
-        #生成随机点
-        while len(self.nodes) <self.max_point_num:
-            k=self.generate_random_points()
+            # 搜索与当前节点距离小于等于 self.step 的节点,返回索引值
+            neighbors = kdtree.query_ball_point((node.x, node.y), self.step)
+            for neighbor_idx in neighbors:
+                #print("节点",node)
+                neighbor = self.nodes[neighbor_idx]
+                if not self.collision(node, neighbor):
+                    #print("节点", node)
+                    self.edges.append((node, neighbor))
+                    #print("Edge:", node, "->", neighbor)
+            #print("-----------------------------------------------------------------")  # 打印边
+
+    def dijkstra(self):
+        # 使用 Dijkstra 算法找到最短路径
+        distances = {node: float('inf') for node in self.nodes}
+        distances[self.start] = 0
+        queue = [(0, self.start)]  # (distance, node)
+        while queue:
+            dist, current = heapq.heappop(queue)
+            if dist > distances[current]:
+                continue
+            for neighbor in self.get_neighbors(current):
+                new_dist = distances[current] + self.dist(current, neighbor)
+                if new_dist < distances[neighbor]:
+                    distances[neighbor] = new_dist
+                    neighbor.parent = current  # 记录路径上的父节点
+                    heapq.heappush(queue, (new_dist, neighbor))
+
+        # 构建路径节点列表
+        path = []
+        current = self.end
+        while current != self.start:
+            path.append(current)
+            current = current.parent
+        path.append(self.start)
+        path.reverse()
+        return path
+
+    def get_neighbors(self, node):
+        neighbors = []
+        for edge in self.edges:
+            if edge[0] == node:
+                neighbors.append(edge[1])
+            elif edge[1] == node:
+                neighbors.append(edge[0])
+        return neighbors
+
+    def a_star(self):
+        # 使用 A* 算法找到最短路径
+        open_set = {self.start}  # 未考虑的节点
+        came_from = {}  # 节点的父节点
+        g_score = {node: float('inf') for node in self.nodes}
+        g_score[self.start] = 0
+        f_score = {node: float('inf') for node in self.nodes}
+        f_score[self.start] = self.dist(self.start, self.end)
+
+        while open_set:
+            current = min(open_set, key=lambda node: f_score[node])
+            if current == self.end:
+                path = [current]
+                while current in came_from:
+                    current = came_from[current]
+                    path.append(current)
+                path.reverse()
+                return path
+
+            open_set.remove(current)
+            for neighbor in self.get_neighbors(current):
+                tentative_g_score = g_score[current] + self.dist(current, neighbor)
+                if tentative_g_score < g_score[neighbor]:
+                    came_from[neighbor] = current
+                    g_score[neighbor] = tentative_g_score
+                    f_score[neighbor] = tentative_g_score + self.dist(neighbor, self.end)
+                    if neighbor not in open_set:
+                        open_set.add(neighbor)
+
+        return []  # 没有找到路径
+
+    def visualize_path(self, path, plan_surface):
+        if not path:
+            return
+        for i in range(len(path) - 1):
+            pygame.draw.line(plan_surface, (255, 0, 0), (path[i].x, path[i].y), (path[i + 1].x, path[i + 1].y), 2)
+
+    def plan(self, plan_surface):
+        start_time=time.time()
+        # 生成随机点
+        while len(self.nodes) < self.max_point_num:
+            k = self.generate_random_points()
             if not self.is_obstacle(k):
                 self.nodes.append(k)
-                pygame.draw.circle(plan_surface, (0, 100, 255), (k.x, k.y), 2)
+                pygame.draw.circle(plan_surface, (0, 100, 255), (int(k.x), int(k.y)), 2)
                 QApplication.processEvents()
+            # 确保起始点和终点在节点集合中
+        if self.start not in self.nodes:
+            self.nodes.append(self.start)
+        if self.end not in self.nodes:
+            self.nodes.append(self.end)
         self.connect_nodes()
+        for edge in self.edges:
+            pygame.draw.line(plan_surface, (0, 255, 0), (edge[0].x, edge[0].y), (edge[1].x, edge[1].y), 1)
+        # distances = self.dijkstra()
+        # self.visualize_path(distances, plan_surface)
+        path = self.a_star()
+        end_time=time.time()
+        print("时间为",end_time-start_time)
+        if path is None:
+            print("未找到可行路径！！！！")
 
+        # for i in path:
+        #     print(i)
+        self.visualize_path(path, plan_surface)
+        return path,end_time-start_time
 
-        for k in self.edges:
-            pygame.draw.line(plan_surface, (0, 0, 255), (k[0].x, k[0].y),
-                             (k[1].x, k[1].y), 4)
-
-        # 构建图表示，其中节点是self.nodes中的Node实例
-        #graph = {}
-        # 遍历所有节点
-        # for node in self.nodes:
-        #     # 获取当前节点的邻居节点列表
-        #     neighbors = [
-        #         other_node for other_node in self.nodes
-        #         if node != other_node and self.collision(node, other_node) and self.dist(node,other_node)<=self.step
-        #     ]
-        #     # 将当前节点和它的邻居节点列表添加到graph字典中
-        #     graph[node] = neighbors
-        # start_index = self.nodes.index(self.start)
-        # end_index = self.nodes.index(self.end)
-        #
-        # came_from, cost_so_far = a_star_search(graph, self.start, self.end)
-        #
-        # # 重建路径
-        # path = [self.end]
-        # while start_index != end_index:
-        #     path.append(came_from[start_index])
-        #     start_index = came_from[start_index]
-
-        # path.reverse()  # 反转路径，使其从起点到终点
-        # return path
