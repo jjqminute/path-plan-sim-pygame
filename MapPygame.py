@@ -255,7 +255,7 @@ class PygameWidget(QWidget):
         self.result = None
         self.result,time = prm(self).plan(self.plan_surface)
         track = []
-        for point in self.result[:-1]:
+        for point in self.result:
             track.append((point.x, point.y))
         return track, time
 

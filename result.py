@@ -173,10 +173,13 @@ class Category_Demo:
         self.ave_smooth = None
         self.ave_path_length = 0
         self.ave_time = 0
+        self.start = []
+        self.end = []
+        self.obstacles = []
 
     def read(self, path):
         """
-        已知完整路径,从文件中读取category
+        已知完整路径,从文件中读取category,在category_compare中使用
         :param path:完整路径
         :return:None
         """
@@ -198,6 +201,17 @@ class Category_Demo:
         for file in files:
             self.results.append(load_demo(os.path.join(path, file)))  # 读取结果
             self.file_name.append(file)  # 保存文件名
+        # 检查是否在同一地图,此时已经读入,比较起点(point)、终点(point)、障碍物(polygon)
+        self.start = self.results[0].start
+        self.end = self.results[0].end
+        self.obstacles = self.results[0].obstacles
+        for result in self.results[1:]:
+            if self.start != result.start or self.end != result.end:  # 比较起始点
+                raise ValueError("起点或终点不同！")  # 抛出异常
+            sorted_group1 = sorted(self.obstacles, key=lambda p: tuple(p.exterior.coords))
+            sorted_group2 = sorted(result.obstacles, key=lambda p: tuple(p.exterior.coords))
+            if not all(p1.equals(p2) for p1, p2 in zip(sorted_group1, sorted_group2)):
+                raise ValueError("障碍物不同！")  # 抛出异常
         self.calculate()
 
     def save_file(self, file_path, name):
@@ -207,7 +221,7 @@ class Category_Demo:
         :param file_path: 保存的路径
         :return: None
         """
-        # 1)地图都是一样的,就直接取出results[0]的就可以
+        # 1)地图都是一样的,就直接取出results[0]的就可以,保存地图是为了检验是否在同地图下运行的结果
         obstacles = self.results[0].obstacles
         start_point = self.results[0].start
         end_point = self.results[0].end
@@ -296,6 +310,9 @@ class Category_Compare:
     def __init__(self):
         self.category = []
         self.df = None  # 生成的数据表格
+        self.start = []
+        self.end = []
+        self.obstacles = []
 
     def read_category(self, files):
         """
@@ -307,6 +324,17 @@ class Category_Compare:
             category = Category_Demo()
             category.read(file)
             self.category.append(category)
+        # 检查是否是同一地图
+        self.start = self.category[0].start
+        self.end = self.category[0].end
+        self.obstacles = self.category[0].obstacles
+        for result in self.category[1:]:
+            if self.start != result.start or self.end != result.end:  # 比较起始点
+                raise ValueError("起点或终点不同！")  # 抛出异常
+            sorted_group1 = sorted(self.obstacles, key=lambda p: tuple(p.exterior.coords))
+            sorted_group2 = sorted(result.obstacles, key=lambda p: tuple(p.exterior.coords))
+            if not all(p1.equals(p2) for p1, p2 in zip(sorted_group1, sorted_group2)):
+                raise ValueError("障碍物不同！")  # 抛出异常
         data = {
             'name': [c.name for c in self.category],
             'average time': [c.ave_time for c in self.category],

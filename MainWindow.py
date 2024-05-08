@@ -155,35 +155,32 @@ class Ui_MainWindow(object):
         radio_button_no = QRadioButton("否", MainWindow)
         radio_button_no.setGeometry(180, 100, 80, 30)  # 设置单选按钮位置和大小
         radio_button_group.addButton(radio_button_no)  # 将单选按钮添加到单选按钮组
-
+        # 创建提示label
+        label_notice = QLabel("", MainWindow)
+        label_notice.setGeometry(100, 250, 120, 30)
         # 单次路径结果比较分析
         button_single = QPushButton("单次路径结果比较分析", MainWindow)
-        button_single.setGeometry(10, 10, 50, 30)
+        button_single.setGeometry(10, 10, 150, 30)
         def on_single_click():
-            # 创建文件对话框
-            dialog = QFileDialog()
-            # 设置对话框标题
-            dialog.setWindowTitle('打开结果文件')
-            # 设置文件过滤器
-            dialog.setNameFilter('Text Files (*.txt)')
-            # 设置默认文件名，包含文件类型后缀
-            # dialog.setDefaultSuffix('txt')
-            files, _ = dialog.getOpenFileNames()
+            files, _ = QFileDialog.getOpenFileNames(MainWindow, '打开结果文件', '', '结果文件 (*.txt)')
             for index, f in enumerate(files):  # 循环选中的所有文件
                 self.open_result_single(index, f)
         button_single.clicked.connect(on_single_click)
 
         # 多路径比较分析
         button_category = QPushButton("多次路径比较分析", MainWindow)
-        button_category.setGeometry(10, 40, 50, 30)
+        button_category.setGeometry(10, 40, 150, 30)
         def on_category_click():
             dialog = QFileDialog()
             dialog.setWindowTitle("选择要进行多次结果分析的文件夹")
             dialog.setFileMode(QFileDialog.DirectoryOnly)
             if dialog.exec_():
-                category = Category_Demo()  # 创建多结果类
-                category.read_file(dialog.selectedFiles()[0])  # 获取选择的文件夹的路径
-                self.open_result_category(category)
+                try:
+                    category = Category_Demo()  # 创建多结果类
+                    category.read_file(dialog.selectedFiles()[0])  # 获取选择的文件夹的路径
+                    self.open_result_category(category)
+                except ValueError as e:
+                    label_notice.setText(str(e))
         button_category.clicked.connect(on_category_click)
         # 创建生成障碍物按钮
         self.button_start = QPushButton("开始规划", MainWindow)
@@ -191,11 +188,9 @@ class Ui_MainWindow(object):
 
         # 不同算法性能对比(多个多次路径比较分析)
         button_category_compare = QPushButton("不同算法性能比较", MainWindow)
-        button_category_compare.setGeometry(10, 70, 50, 30)
+        button_category_compare.setGeometry(10, 70, 150, 30)
         def on_category_compare_click():
-            dialog = QFileDialog()
-            dialog.setWindowTitle("选择要进行性能对比的文件")
-            files, _ = dialog.getOpenFileNames()
+            files, _ = QFileDialog.getOpenFileNames(MainWindow, '选择要进行性能对比的文件', '', '计算结果文件 (*.txt)')
             if files:
                 compare = Category_Compare()
                 compare.read_category(files)
@@ -557,8 +552,9 @@ class Ui_MainWindow(object):
         label_time = QLabel("平均时间是："+str(category.ave_time))
         label_path_length = QLabel("平均路径长度是："+str(category.ave_path_length))
         textbox_name = QLineEdit("")
-        textbox_name.setPlaceholderText("请输入文件名")
+        textbox_name.setPlaceholderText("请输入算法名称")
         button_save = QPushButton("保存结果")
+
         def on_button_save_click():
             dialog = QFileDialog()
             dialog.setAcceptMode(QFileDialog.AcceptSave)
@@ -569,7 +565,7 @@ class Ui_MainWindow(object):
             # 设置默认文件名，包含文件类型后缀
             dialog.setDefaultSuffix('txt')
             # 打开文件对话框，并返回保存的文件路径
-            file_path, _ = dialog.getSaveFileName(MainWindow, '保存category', '', 'category文件 (*.txt)')
+            file_path, _ = dialog.getSaveFileName(MainWindow, '保存计算结果', '', '计算结果文件 (*.txt)')
             category.save_file(file_path, textbox_name.text())
         button_save.clicked.connect(on_button_save_click)
         layout = QVBoxLayout()
