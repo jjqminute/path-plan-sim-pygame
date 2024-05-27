@@ -20,7 +20,9 @@ class AlgorithmList(QWidget):
         self.algorithms = [
             ('AStar', '......', '...', '......'),
             ('RRT', '......', '...', '......'),
-            ('Dijkstra', '......', '...', '......')
+            ('APF', '......', '...', '......'),
+            ('PRM', '......', '...', '......'),
+            ('APF-RRT', '......', '...', '......')
         ]
 
         # 设置行数为算法数据的长度
@@ -43,6 +45,8 @@ class AlgorithmList(QWidget):
         self.table.setColumnWidth(1, 250)  # 第二列宽度为 250 像素
         self.table.setColumnWidth(2, 200)  # 第三列宽度为 200 像素
         self.table.setColumnWidth(3, 200)  # 第四列宽度为 200 像素
+        self.table.setColumnWidth(4, 200)  # 第四列宽度为 200 像素
+        self.table.setColumnWidth(5, 200)  # 第四列宽度为 200 像素
 
         # 创建垂直布局，并将表格添加到布局中
         layout = QVBoxLayout()
