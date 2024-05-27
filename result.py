@@ -57,7 +57,7 @@ class Result_Demo:
         """
         self.start = start
         self.end = end
-        self.time = time
+        self.time = round(time, 2)
         self.obstacles = obstacles
         self.track = track
         self.smoothness = smoothness
@@ -94,7 +94,7 @@ class Result_Demo:
     def draw_track(self):
         """
         画出路径
-        :return:
+        :return:figure
         """
         figure = plt.figure()
         self.draw_end()
@@ -105,7 +105,7 @@ class Result_Demo:
         plt.gca().invert_yaxis()
         plt.gca().xaxis.tick_top()  # 将x轴刻度显示在上方
         plt.plot(a, b)
-        return FigureCanvas(figure)
+        return figure
 
     # -----------------------计算路径平滑度-----------------------------------
     def compute_curvature(self, x, y):
@@ -126,10 +126,13 @@ class Result_Demo:
 
         # 计算平均曲率作为路径平滑度的指标
         average_curvature = np.mean(curvature)
-        self.smoothness = average_curvature
+        self.smoothness = round(average_curvature, 2)
 
     def draw_curvature(self):
-        # 绘制曲率
+        """
+        绘制曲率
+        :return:figure
+        """
         figure = plt.figure()
         path_x = [x for (x, y) in self.track]
         path_y = [y for (x, y) in self.track]
@@ -141,7 +144,7 @@ class Result_Demo:
         plt.ylabel("curvature")
 
         plt.tight_layout()
-        return FigureCanvas(figure)
+        return figure
 
     # -----------------------------------计算路径长度-------------------------------
     def calculate_path_length(self):
@@ -154,6 +157,7 @@ class Result_Demo:
             distance = math.sqrt(dx * dx + dy * dy)
             # 累加到路径长度
             self.pathlen += distance
+        self.pathlen = round(self.pathlen, 2)
         print(f"路径长度为:{self.pathlen}")
 
 
@@ -251,7 +255,7 @@ class Category_Demo:
     def track_compare(self):
         """
         绘制不同路径的对比
-        :return: null
+        :return: figure
         """
         figure = plt.figure()
         self.results[0].draw_obstacles()
@@ -264,7 +268,7 @@ class Category_Demo:
             b = [y for (x, y) in r.track]
             plt.plot(a, b, label=n)
         plt.legend(loc='upper right')
-        return FigureCanvas(figure)
+        return figure
 
     def calculate(self):
         """
@@ -277,33 +281,33 @@ class Category_Demo:
 
     def calculate_average_smoothness(self):
         """
-        求多个结果的平均路径平滑度
+        求多个结果的平均路径平滑度(保留两位小数)
         :return:None
         """
         total_smoothness = 0
         result_count = len(self.results)
         for r in self.results:
             total_smoothness += r.smoothness
-        self.ave_smooth = total_smoothness/result_count
+        self.ave_smooth = round(total_smoothness/result_count, 2)
 
     def calculate_average_length(self):
         """
-        求多个结果的平均路径长度
+        求多个结果的平均路径长度(保留两位小数)
         :return:None
         """
         total_length = 0
         result_count = len(self.results)
         for r in self.results:
             total_length += r.pathlen
-        self.ave_path_length = total_length / result_count
+        self.ave_path_length = round(total_length / result_count, 2)
 
     def calculate_average_time(self):
         """
-        求平均用时
+        求平均用时(保留两位小数)
         :return:None
         """
         times = [r.time for r in self.results]
-        self.ave_time = sum(times) / len(times)
+        self.ave_time = round(sum(times) / len(times), 2)
 
 
 class Category_Compare:
@@ -318,7 +322,7 @@ class Category_Compare:
         """
         读取一系列category文件
         :param files: 完整路径数组
-        :return:
+        :return:None
         """
         for file in files:
             category = Category_Demo()
