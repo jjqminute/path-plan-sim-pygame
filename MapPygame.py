@@ -23,6 +23,7 @@ from arithmetic.Astar.Map import Map
 from arithmetic.Astar.astar import astar
 from arithmetic.RRT.rrt import Rrt
 from arithmetic.APFRRT.APFRRT import APFRRT
+from arithmetic.APF.MPV import Mpv
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
@@ -221,6 +222,11 @@ class PygameWidget(QWidget):
     def startApfRrt(self):
         self.result = None
         self.result = APFRRT(self).plan(self.plan_surface)
+
+    def start_mpv(self):
+        self.result = None
+        self.result = Mpv(self).plan(self.plan_surface)
+
     # 保存地图文件
     def save_map(self):
         # 创建文件对话框
@@ -255,7 +261,7 @@ class PygameWidget(QWidget):
         if self.start_point is not None and self.end_point is not None:
             start_point = geojson.Point(self.start_point)
             end_point = geojson.Point(self.end_point)
-            features.append(geojson.Feature(geometry=start_point, properties={"name": "start point"}))
+            features.append(geojson.Feature(geometry=start_point, properties={"name": "start_point point"}))
             features.append(geojson.Feature(geometry=end_point, properties={"name": "goal point"}))
 
         feature_collection = geojson.FeatureCollection(features)
@@ -305,7 +311,7 @@ class PygameWidget(QWidget):
         for feature in geojson_obj['features']:
             geometry = feature['geometry']
             properties = feature['properties']
-            if geometry['type'] == 'Point' and properties['name'] == "start point":
+            if geometry['type'] == 'Point' and properties['name'] == "start_point point":
                 self.start_point = geometry['coordinates']
             if geometry['type'] == 'Point' and properties['name'] == "goal point":
                 self.end_point = geometry['coordinates']
@@ -489,7 +495,7 @@ class PygameWidget(QWidget):
         #     # 使用QPainter绘制pixmap
         #     painter = QPainter(self)
         #     painter.drawPixmap(0, 0, pixmap)
-        #     painter.end()
+        #     painter.end_point()
         #     # grid_widget.painting_ori(x,y)
         self.start_point = (x, y)
         self.main_window.printf("设置起点", x, y)
@@ -518,7 +524,7 @@ class PygameWidget(QWidget):
         #     # 使用QPainter绘制pixmap
         #     painter = QPainter(self)
         #     painter.drawPixmap(0, 0, pixmap)
-        #     painter.end()
+        #     painter.end_point()
         #     # grid_widget.painting_end(x1,y1)
         self.end_point = (x1, y1)
         self.main_window.printf("设置终点", x1, y1)

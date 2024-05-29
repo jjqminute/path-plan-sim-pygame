@@ -187,6 +187,7 @@ class Ui_MainWindow(object):
         self.combo_arithmetic.addItem("")
         self.combo_arithmetic.addItem("")
         self.combo_arithmetic.addItem("")
+        self.combo_arithmetic.addItem("")
         # 选择障碍物图形
         self.combo_arithmetic_obs = QtWidgets.QComboBox(self.centralwidget)
         self.combo_arithmetic_obs.setGeometry(QtCore.QRect(830, 455, 100, 25))
@@ -430,6 +431,7 @@ class Ui_MainWindow(object):
         self.combo_arithmetic.setItemText(2, _translate("MainWindow", "RRT"))
         self.combo_arithmetic.setItemText(3, _translate("MainWindow", "APF"))
         self.combo_arithmetic.setItemText(4, _translate("MainWindow", "APFRRT"))
+        self.combo_arithmetic.setItemText(5, _translate("MainWindow", "MPV"))
         self.combo_arithmetic_obs.setItemText(0, _translate("MainWindow", "图形障碍物"))
         self.combo_arithmetic_obs.setItemText(1, _translate("MainWindow", "矩形"))
         self.combo_arithmetic_obs.setItemText(2, _translate("MainWindow", "圆形"))
@@ -458,6 +460,9 @@ class Ui_MainWindow(object):
             elif self.combo_arithmetic.currentText() == "APFRRT":
                 self.printf("启动APF-RRT算法！！！")
                 self.grid_widget.startApfRrt()
+            elif self.combo_arithmetic.currentText() == "MPV":
+                self.printf("启动MPV算法！！！")
+                self.grid_widget.start_mpv()
 
     def ori_end_input(self):  # 输入起始点终点函数
         coordinate = self.text_input.text()
