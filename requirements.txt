@@ -3,3 +3,6 @@ pygame
 shapely
 geojson
 opencv-python
+geopandas
+matplotlib
+scipy
