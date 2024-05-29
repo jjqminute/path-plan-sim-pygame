@@ -260,6 +260,10 @@ class Ui_MainWindow(object):
         radio_button_PRM = QRadioButton("PRM", MainWindow)
         radio_button_PRM.setGeometry(370, 30, 80, 30)  # 设置单选按钮位置和大小
         radio_button_group.addButton(radio_button_PRM)
+        #IPRM
+        radio_button_IPRM = QRadioButton("IPRM", MainWindow)
+        radio_button_IPRM.setGeometry(470, 30, 80, 30)  # 设置单选按钮位置和大小
+        radio_button_group.addButton(radio_button_IPRM)
         # 保存结果部分
         label_result = QLabel("是否保存结果:", MainWindow)
         label_result.setGeometry(30, 60, 80, 30)
@@ -351,6 +355,9 @@ class Ui_MainWindow(object):
                 elif radio_button_PRM.isChecked():
                     obstacle_overlap = "PRM"
                     track, time = grid_widget.startPRm()
+                elif radio_button_IPRM.isChecked():
+                    obstacle_overlap = "IPRM"
+                    track, time = grid_widget.startIPRm()
                 label_notice.setText("正在规划路径！")
                 # 保存结果部分
                 if radio_button_result_true.isChecked():
@@ -1166,6 +1173,9 @@ class Ui_MainWindow(object):
             elif self.combo_arithmetic.currentText() == "PRM":
                 self.printf("启动PRM算法！！！")
                 self.grid_widget.startPRm()
+            elif self.combo_arithmetic.currentText() == "IPRM":
+                self.printf("启动IPRM算法！！！")
+                self.grid_widget.startIPRm()
 
     def ori_end_input(self):  # 输入起始点终点函数
         coordinate = self.text_input.text()

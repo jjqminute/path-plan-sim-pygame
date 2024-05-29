@@ -32,6 +32,7 @@ from result import Result_Demo
 from arithmetic.RRT.rrt import Rrt
 from arithmetic.APFRRT.APFRRT import APFRRT
 from arithmetic.PRM.prm import prm
+from arithmetic.PRM.iprm import iprm
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
@@ -254,6 +255,14 @@ class PygameWidget(QWidget):
     def startPRm(self):
         self.result = None
         self.result,time = prm(self).plan(self.plan_surface)
+        track = []
+        for point in self.result:
+            track.append((point.x, point.y))
+        return track, time
+    
+    def startIPRm(self):
+        self.result = None
+        self.result,time = iprm(self).plan(self.plan_surface)
         track = []
         for point in self.result:
             track.append((point.x, point.y))
