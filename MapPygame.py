@@ -24,6 +24,7 @@ from arithmetic.Astar.astar import astar
 from arithmetic.RRT.rrt import Rrt
 from arithmetic.APFRRT.APFRRT import APFRRT
 from arithmetic.APF.MPV import Mpv
+from arithmetic.PRM.prm import prm
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
@@ -227,6 +228,10 @@ class PygameWidget(QWidget):
         self.result = None
         self.result = Mpv(self).plan(self.plan_surface)
 
+
+    def startPRm(self):
+        self.result = None
+        self.result = prm(self).plan(self.plan_surface)
     # 保存地图文件
     def save_map(self):
         # 创建文件对话框
