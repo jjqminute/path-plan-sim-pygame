@@ -22,7 +22,7 @@ class prm:
         self.max_point_num = 1000
         self.nodes = [self.start, self.end]
         self.edges = []
-        self.step = 30
+        self.step = 50
 
 
 

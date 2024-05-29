@@ -204,13 +204,19 @@ class PygameWidget(QWidget):
         self.result = None
         # self.obs_surface.fill(PygameWidget.BACK_COLOR)
         self.search = astar(self)
-        self.result = self.search.process()
+        self.result,time = self.search.process(self.plan_surface)
 
         if self.result is not None:
             for k in self.result:
                 pygame.draw.circle(self.plan_surface, (0, 100, 255), (k.x, k.y), 3)
                 # time.sleep(0.1)
-
+        track = []
+        for point in self.result:
+            x = point.x
+            y = point.y
+            track.append((x, y))
+        # self.save_result(time1,track)
+        return track, time
     # RRT算法
     def startRtt(self):
         self.result = None

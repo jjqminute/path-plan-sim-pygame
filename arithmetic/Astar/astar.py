@@ -104,7 +104,7 @@ class astar:  # 核心部分，寻路类
                     i.father = tf
 
     def getEstimate(self, loc):  # H :从点loc移动到终点的预估花费
-        return (abs(loc.x - self.end.x) + abs(loc.y - self.end.y)) * 10
+        return (abs(loc.x - self.end.x) + abs(loc.y - self.end.y))
 
     def draw(self, current, open, close):
         self.screen.fill((255, 255, 255))
@@ -131,7 +131,7 @@ class astar:  # 核心部分，寻路类
                     pygame.draw.rect(self.screen, (150, 150, 150), (k.x, k.y, self.cell_size, self.cell_size), 0)
                     break
 
-    def process(self):  # 使用yield将process方法变成一个生成器，可以逐步的对搜索过程进行处理并返回关键数据
+    def process(self,plan_surface):  # 使用yield将process方法变成一个生成器，可以逐步的对搜索过程进行处理并返回关键数据
         start = time.time()
         print("起点为", self.start)
         print("障碍物", self.obstacles)
@@ -147,13 +147,17 @@ class astar:  # 核心部分，寻路类
                 self.addToOpen(aroundP, tar)  # 把aroundP加入到open列表中并更新F值以及设定父节点
                 self.open.remove(tar)  # 将tar从open列表中移除
                 self.close.append(tar)  # 已经迭代过的节点tar放入close列表中
-                if self.end in self.open:  # 判断终点是否已经处于open列表中
+                if self.end in self.open or self.getEstimate(tar)<15:  # 判断终点是否已经处于open列表中
                     e = self.end
+                    e.father=tar
                     self.result.append(e)
+                    pygame.draw.circle(plan_surface, (0, 100, 255), (e.x, e.y), 2)
                     while True:
+
                         e = e.father
                         if e == None:
                             break
+
                         self.result.append(e)
                     # self.mapdata.paintAstar(self.open,self.close)
                     # self.save()
@@ -166,7 +170,7 @@ class astar:  # 核心部分，寻路类
         end = time.time()
         print("花费时间为")
         print(end - start)
-        return self.result
+        return self.result,end-start
         # self.repaint()
         # print('返回')
 
