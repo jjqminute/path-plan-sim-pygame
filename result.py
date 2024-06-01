@@ -57,7 +57,7 @@ class Result_Demo:
         """
         self.start = start
         self.end = end
-        self.time = time
+        self.time = round(time, 2)
         self.obstacles = obstacles
         self.track = track
         self.smoothness = smoothness
@@ -94,7 +94,7 @@ class Result_Demo:
     def draw_track(self):
         """
         画出路径
-        :return:
+        :return:figure
         """
         figure = plt.figure()
         self.draw_end()
@@ -105,7 +105,7 @@ class Result_Demo:
         plt.gca().invert_yaxis()
         plt.gca().xaxis.tick_top()  # 将x轴刻度显示在上方
         plt.plot(a, b)
-        return FigureCanvas(figure)
+        return figure
 
     # -----------------------计算路径平滑度-----------------------------------
     def compute_curvature(self, x, y):
@@ -126,10 +126,13 @@ class Result_Demo:
 
         # 计算平均曲率作为路径平滑度的指标
         average_curvature = np.mean(curvature)
-        self.smoothness = average_curvature
+        self.smoothness = round(average_curvature, 2)
 
     def draw_curvature(self):
-        # 绘制曲率
+        """
+        绘制曲率
+        :return:figure
+        """
         figure = plt.figure()
         path_x = [x for (x, y) in self.track]
         path_y = [y for (x, y) in self.track]
@@ -141,7 +144,7 @@ class Result_Demo:
         plt.ylabel("curvature")
 
         plt.tight_layout()
-        return FigureCanvas(figure)
+        return figure
 
     # -----------------------------------计算路径长度-------------------------------
     def calculate_path_length(self):
@@ -154,6 +157,7 @@ class Result_Demo:
             distance = math.sqrt(dx * dx + dy * dy)
             # 累加到路径长度
             self.pathlen += distance
+        self.pathlen = round(self.pathlen, 2)
         print(f"路径长度为:{self.pathlen}")
 
 
@@ -173,10 +177,13 @@ class Category_Demo:
         self.ave_smooth = None
         self.ave_path_length = 0
         self.ave_time = 0
+        self.start = []
+        self.end = []
+        self.obstacles = []
 
     def read(self, path):
         """
-        已知完整路径,从文件中读取category
+        已知完整路径,从文件中读取category,在category_compare中使用
         :param path:完整路径
         :return:None
         """
@@ -198,6 +205,17 @@ class Category_Demo:
         for file in files:
             self.results.append(load_demo(os.path.join(path, file)))  # 读取结果
             self.file_name.append(file)  # 保存文件名
+        # 检查是否在同一地图,此时已经读入,比较起点(point)、终点(point)、障碍物(polygon)
+        self.start = self.results[0].start
+        self.end = self.results[0].end
+        self.obstacles = self.results[0].obstacles
+        for result in self.results[1:]:
+            if self.start != result.start or self.end != result.end:  # 比较起始点
+                raise ValueError("起点或终点不同！")  # 抛出异常
+            sorted_group1 = sorted(self.obstacles, key=lambda p: tuple(p.exterior.coords))
+            sorted_group2 = sorted(result.obstacles, key=lambda p: tuple(p.exterior.coords))
+            if not all(p1.equals(p2) for p1, p2 in zip(sorted_group1, sorted_group2)):
+                raise ValueError("障碍物不同！")  # 抛出异常
         self.calculate()
 
     def save_file(self, file_path, name):
@@ -207,7 +225,7 @@ class Category_Demo:
         :param file_path: 保存的路径
         :return: None
         """
-        # 1)地图都是一样的,就直接取出results[0]的就可以
+        # 1)地图都是一样的,就直接取出results[0]的就可以,保存地图是为了检验是否在同地图下运行的结果
         obstacles = self.results[0].obstacles
         start_point = self.results[0].start
         end_point = self.results[0].end
@@ -237,7 +255,7 @@ class Category_Demo:
     def track_compare(self):
         """
         绘制不同路径的对比
-        :return: null
+        :return: figure
         """
         figure = plt.figure()
         self.results[0].draw_obstacles()
@@ -250,7 +268,7 @@ class Category_Demo:
             b = [y for (x, y) in r.track]
             plt.plot(a, b, label=n)
         plt.legend(loc='upper right')
-        return FigureCanvas(figure)
+        return figure
 
     def calculate(self):
         """
@@ -263,50 +281,64 @@ class Category_Demo:
 
     def calculate_average_smoothness(self):
         """
-        求多个结果的平均路径平滑度
+        求多个结果的平均路径平滑度(保留两位小数)
         :return:None
         """
         total_smoothness = 0
         result_count = len(self.results)
         for r in self.results:
             total_smoothness += r.smoothness
-        self.ave_smooth = total_smoothness/result_count
+        self.ave_smooth = round(total_smoothness/result_count, 2)
 
     def calculate_average_length(self):
         """
-        求多个结果的平均路径长度
+        求多个结果的平均路径长度(保留两位小数)
         :return:None
         """
         total_length = 0
         result_count = len(self.results)
         for r in self.results:
             total_length += r.pathlen
-        self.ave_path_length = total_length / result_count
+        self.ave_path_length = round(total_length / result_count, 2)
 
     def calculate_average_time(self):
         """
-        求平均用时
+        求平均用时(保留两位小数)
         :return:None
         """
         times = [r.time for r in self.results]
-        self.ave_time = sum(times) / len(times)
+        self.ave_time = round(sum(times) / len(times), 2)
 
 
 class Category_Compare:
     def __init__(self):
         self.category = []
         self.df = None  # 生成的数据表格
+        self.start = []
+        self.end = []
+        self.obstacles = []
 
     def read_category(self, files):
         """
         读取一系列category文件
         :param files: 完整路径数组
-        :return:
+        :return:None
         """
         for file in files:
             category = Category_Demo()
             category.read(file)
             self.category.append(category)
+        # 检查是否是同一地图
+        self.start = self.category[0].start
+        self.end = self.category[0].end
+        self.obstacles = self.category[0].obstacles
+        for result in self.category[1:]:
+            if self.start != result.start or self.end != result.end:  # 比较起始点
+                raise ValueError("起点或终点不同！")  # 抛出异常
+            sorted_group1 = sorted(self.obstacles, key=lambda p: tuple(p.exterior.coords))
+            sorted_group2 = sorted(result.obstacles, key=lambda p: tuple(p.exterior.coords))
+            if not all(p1.equals(p2) for p1, p2 in zip(sorted_group1, sorted_group2)):
+                raise ValueError("障碍物不同！")  # 抛出异常
         data = {
             'name': [c.name for c in self.category],
             'average time': [c.ave_time for c in self.category],
