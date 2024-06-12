@@ -83,6 +83,8 @@ class PygameWidget(QWidget):
     WIDTH = 920
     HEIGHT = 450
     CELL_SIZE = 10
+    START_COLOR = (0, 255, 0)
+    END_COLOR = (255, 0, 0)
 
     def __init__(self, main_window, parent=None):
         super(PygameWidget, self).__init__(parent)
@@ -100,6 +102,9 @@ class PygameWidget(QWidget):
         self.obs_color = PygameWidget.OBS_COLOR
 
         self.grid_color = PygameWidget.OBS_COLOR
+
+        self.start_color = PygameWidget.START_COLOR
+        self.end_color = PygameWidget.END_COLOR
 
         # 设置障碍物画笔半径
         self.obs_radius = PygameWidget.OBS_RADIUS
@@ -136,7 +141,7 @@ class PygameWidget(QWidget):
         # # 障碍物列表
         # self.block_map = []
 
-        # 地图列表
+        # 栅格化后地图的列和行数
         self.cols = self.width // self.cell_size
         self.rows = self.height // self.cell_size
 
@@ -483,21 +488,36 @@ class PygameWidget(QWidget):
                 # 判断起点存在且不在障碍物内部
                 if self.start_point is None:
                     if all(not shapely.Polygon(item).contains(shapely.Point(list(pos))) for item in self.obstacles):
-                        self.start_point = pos
-                        print(self.start_point)
-                        pygame.draw.circle(self.point_surface, (0, 255, 0), pos, self.point_radius)
-                        self.main_window.printf("设置起点", event.pos().x(), event.pos().y())
+                        if self.grid:
+                            # 栅格化起点和终点
+                            rect = self.rasterize_point(pos)
+                            pygame.draw.rect(self.point_surface, self.start_color, rect)
+                            self.start_point = pos
+                            print(self.start_point)
+                            self.main_window.printf("设置起点", event.pos().x(), event.pos().y())
+                        else:
+                            self.start_point = pos
+                            print(self.start_point)
+                            pygame.draw.circle(self.point_surface, (0, 255, 0), pos, self.point_radius)
+                            self.main_window.printf("设置起点", event.pos().x(), event.pos().y())
                     else:
                         self.main_window.text_result.append("起点不能设置在障碍物内部")
-                else:
-                    if self.start_point and self.start_point != pos and self.end_point is None:
-                        if all(not shapely.Polygon(item).contains(shapely.Point(list(pos))) for item in self.obstacles):
+                elif self.start_point and self.start_point != pos and self.end_point is None:
+                    if all(not shapely.Polygon(item).contains(shapely.Point(list(pos))) for item in self.obstacles):
+                        if self.grid:
+                            # 栅格化起点和终点
+                            rect = self.rasterize_point(pos)
+                            pygame.draw.rect(self.point_surface, self.end_color, rect)
+                            self.end_point = pos
+                            print(self.end_point)
+                            self.main_window.printf("设置终点", event.pos().x(), event.pos().y())
+                        else:
                             self.end_point = pos
                             print(self.end_point)
                             pygame.draw.circle(self.point_surface, (255, 0, 0), pos, self.point_radius)
                             self.main_window.printf("设置终点", event.pos().x(), event.pos().y())
-                        else:
-                            self.main_window.text_result.append("终点不能设置在障碍物内部")
+                    else:
+                        self.main_window.text_result.append("终点不能设置在障碍物内部")
             else:
                 self.main_window.text_result.append("请添加障碍物后再设置起始点")
 
@@ -514,6 +534,8 @@ class PygameWidget(QWidget):
         if event.button() == Qt.LeftButton:
             self.drawing = False
             self.last_pos = None
+            if self.grid:
+                self.rasterize_map()
             self.get_obs_vertices()
 
     # 绘制pygame界面
@@ -583,6 +605,8 @@ class PygameWidget(QWidget):
 
     # 栅格化地图
     def rasterize_map(self):
+        # 清除栅格地图存储数组
+        self.grid_map = numpy.zeros((self.cols, self.rows), dtype=numpy.uint8)
 
         obs_array = pygame.surfarray.array3d(self.obs_surface)
         # obs_array = numpy.transpose(obs_array, (1, 0, 2))
@@ -602,6 +626,7 @@ class PygameWidget(QWidget):
                     pygame.draw.rect(self.obs_surface, self.obs_color, rect)
 
         # 绘制格线
+        self.grid_surface.fill(self.back_color) #清除格线
         for y in range(self.rows + 1):
             pygame.draw.line(self.grid_surface, self.grid_color, (0, y * self.cell_size),
                              (self.width, y * self.cell_size))
@@ -613,12 +638,35 @@ class PygameWidget(QWidget):
         #     pygame.draw.line(self.grid_surface, self.grid_color, (0, y), (self.width, y))
         # for x in range(0, self.width + 1, self.cell_size):
         #     pygame.draw.line(self.grid_surface, self.grid_color, (x, 0), (x, self.height))
+        if self.start_point or self.end_point:
+            self.rasterize_all_points()
 
         self.grid = True
 
+    def rasterize_point(self, point):
+        col, row = point[0] // self.cell_size, point[1] // self.cell_size
+        rect = pygame.Rect(col * self.cell_size, row * self.cell_size, self.cell_size, self.cell_size)
+        return rect
+    
+    def rasterize_start_point(self):
+        rect = self.rasterize_point(self.start_point)
+        pygame.draw.rect(self.point_surface, self.start_color, rect)
+    
+    def rasterize_end_point(self):
+        rect = self.rasterize_point(self.end_point)
+        pygame.draw.rect(self.point_surface, self.end_color, rect)
+
+    def rasterize_all_points(self):
+        # 清除点
+        self.point_surface.fill(self.back_color)
+        if self.start_point:
+            self.rasterize_start_point()
+        if self.end_point:
+            self.rasterize_end_point()
+
     # 画起始点
     def painting_ori(self, x, y):
-        # 输入新的起始点需要判断是否在之前已经生成起始点了，生成起始点就需要将原来的擦除以及self。start_point换成新的值
+        # 输入新的起始点需要判断是否在之前已经生成起始点了，生成起始点就需要将原来的擦除以及self.start_point换成新的值
         if(self.start_point != None):
             pygame.draw.circle(self.obs_surface, (255, 255, 255), self.start_point, self.obs_radius)
             self.start_point = None
@@ -657,22 +705,27 @@ class PygameWidget(QWidget):
             pygame.draw.circle(self.point_surface, (255, 0, 0), (x1, y1), self.point_radius)
             self.update()
 
-    # 修改地图分辨率[OK]
+    # 修改栅格大小
     def modifyMap(self, size):
-        if self.start_point is None and self.end_point is None and len(self.obstacles) == 0:
-            if not isinstance(size, str):
-                self.main_window.printf("请输入正确的分辨率！", None, None)
-                if int(size) > 0:
-                    new_size = int(size)
-                    self.cell_size = new_size
-                    print(self.cell_size)
-                    self.cols = self.width // self.cell_size
-                    self.rows = self.height // self.cell_size
-                    self.main_window.printf("分辨率调整成功！", None, None)
-                else:
-                    self.main_window.printf("请输入正确的分辨率！", None, None)
+        # if self.start_point is None and self.end_point is None and len(self.obstacles) == 0:
+        if not isinstance(size, int):
+            self.main_window.printf("请输入正确的整型栅格大小！", None, None)
+        elif int(size) > 0:
+            new_size = int(size)
+            self.cell_size = new_size
+            print(self.cell_size)
+            self.cols = self.width // self.cell_size
+            self.rows = self.height // self.cell_size
+            # 重新生成栅格
+            self.rasterize_map()
+            # 重新生成起点终点
+            self.rasterize_all_points()
+
+            self.main_window.printf("栅格大小调整成功！", None, None)
         else:
-            self.main_window.printf("当前地图已起始点或障碍点不可调整地图分辨率，请清空地图后再次调整分辨率！", None, None)
+            self.main_window.printf("请输入正确的栅格大小！", None, None)
+        # else:
+        #     self.main_window.printf("当前地图已起始点或障碍点不可调整地图栅格大小，请清空地图后再次调整栅格大小！", None, None)
 
     # 随机起始点方法[Ok]
     def generateRandomStart(self):

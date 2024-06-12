@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QWidget, QMainWindow, QMessageBox, QApplication, QFi
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 from AlgorithmList import AlgorithmList
-from GridWidget import GridWidget
+# from GridWidget import GridWidget
 from MapPygame import PygameWidget
 from result import load_demo, Category_Demo, Category_Compare
 
@@ -366,18 +366,18 @@ class Ui_MainWindow(object):
         # 连接按钮的点击信号
         self.button_generate_obstacle.clicked.connect(on_button_click)
 
-    # 地图分辨率调整
+    # 地图栅格大小调整
     def map(self, MainWindow, grid_widget):
         self.loginWindow_new = None
         MainWindow.setObjectName("地图参数")
         MainWindow.setFixedSize(300, 120)
         # 创建障碍物数量标签
-        self.label_sum = QLabel("分辨率:", MainWindow)
+        self.label_sum = QLabel("栅格大小:", MainWindow)
         self.label_sum.setGeometry(10, 20, 80, 30)  # 设置标签位置和大小
         # 创建第一个输入框
         self.lineEdit1 = QLineEdit(MainWindow)
         self.lineEdit1.setGeometry(80, 20, 200, 30)  # 设置输入框位置和大小
-        self.lineEdit1.setPlaceholderText("请输入分辨率大小")  # 设置提示文字
+        self.lineEdit1.setPlaceholderText("请输入栅格大小")  # 设置提示文字
         # 创建生成障碍物按钮
         self.button_modify = QPushButton("调整", MainWindow)
         self.button_modify.setGeometry(90, 60, 60, 30)  # 设置按钮位置和大小
@@ -389,10 +389,15 @@ class Ui_MainWindow(object):
         def on_button_click():
             obstacle_quantity = self.lineEdit1.text()
             if not obstacle_quantity:
-                label_notice.setText("请输入地图分辨率！")
+                label_notice.setText("请输入地图栅格大小！")
                 return
-            grid_widget.modifyMap(int(obstacle_quantity))
-            label_notice.setText("分辨率修改成功！")
+            try:
+                int(obstacle_quantity)
+                grid_widget.modifyMap(int(obstacle_quantity))
+            except (ValueError, TypeError):
+                label_notice.setText("请输入正确的整型栅格大小！")
+                return
+            label_notice.setText("栅格大小修改成功！")
         def on_button_default():
             print("默认地图")
         # 连接按钮的点击信号
@@ -793,7 +798,7 @@ class Ui_MainWindow(object):
         self.action_empty = QtWidgets.QAction(MainWindow)
         self.action_empty.setObjectName("action_empty")
         self.action_empty.triggered.connect(grid_widget.clear_map)
-        # 调整地图
+        # 调整栅格大小
         self.action_mapModify = QtWidgets.QAction(MainWindow)
         self.action_mapModify.setObjectName("action_mapModify")
         self.action_mapModify.triggered.connect(self.modify_map)
@@ -874,7 +879,7 @@ class Ui_MainWindow(object):
         self.select_action10.setCheckable(True)
         self.select_action10.triggered.connect(lambda: self.add_tool(9))
 
-        self.select_action11 = self.menu_display.addAction("地图调整")
+        self.select_action11 = self.menu_display.addAction("地图栅格大小调整")
         self.select_action11.setCheckable(True)
         self.select_action11.triggered.connect(lambda: self.add_tool(10))
 
@@ -1109,7 +1114,7 @@ class Ui_MainWindow(object):
     def openNewWindow(self):
         new_window = QtWidgets.QMainWindow()
         ui = Ui_MainWindow()
-        grid_widget = GridWidget(ui)
+        # grid_widget = GridWidget(ui)
         pw = PygameWidget(ui)
         ui.setupUi(new_window, pw)
 
@@ -1184,7 +1189,7 @@ class Ui_MainWindow(object):
         self.action_randomPoint.setText(_translate("MainWindow", "随机起始点"))
         self.action_input.setText(_translate("MainWindow", "输入起始点"))
         self.action_empty.setText(_translate("MainWindow", "清空地图"))
-        self.action_mapModify.setText(_translate("MainWindow", "调整地图"))
+        self.action_mapModify.setText(_translate("MainWindow", "调整地图栅格大小"))
         self.action_plan.setText(_translate("MainWindow", "路径规划"))
         self.action_analyse.setText(_translate("MainWindow", "分析规划"))
         self.action_get.setText(_translate("MainWindow", "获取图形"))
@@ -1254,7 +1259,7 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     ui = Ui_MainWindow()
     mainWindow = QtWidgets.QMainWindow()
-    grid_widget = GridWidget(ui)
+    # grid_widget = GridWidget(ui)
     pw = PygameWidget(ui)
     ui.setupUi(mainWindow, pw)
     # 添加地图
