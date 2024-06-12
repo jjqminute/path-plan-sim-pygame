@@ -43,7 +43,6 @@ class Ui_MainWindow(object):
         slider.setMinimum(5)  # 设置最小值
         slider.setMaximum(200)  # 设置最大值
         slider.setOrientation(Qt.Horizontal)  # 设置水平方向
-
         # 创建标签用于显示滑块的值
         label_slider_value = QLabel("5", MainWindow)
         label_slider_value.setGeometry(350, 100, 40, 30)  # 设置标签位置和大小
@@ -678,7 +677,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow, grid_widget):
         self.loginWindow_new = None
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1100, 850)
+        MainWindow.resize(1050, 850)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("./img/logo.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         MainWindow.setWindowIcon(icon)
@@ -687,29 +686,17 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
         MainWindow.setSizePolicy(sizePolicy)
-        MainWindow.setMinimumSize(QtCore.QSize(1100, 850))
-        MainWindow.setMaximumSize(QtCore.QSize(1100, 850))
+        MainWindow.setMinimumSize(QtCore.QSize(1050, 850))
+        MainWindow.setMaximumSize(QtCore.QSize(1050, 850))
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-        self.pushButton = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton.setGeometry(QtCore.QRect(130, 425, 75, 25))
-        self.pushButton.setObjectName("pushButton")
-        self.pushButton.clicked.connect(grid_widget.clear_map)
+
         self.text_result = QtWidgets.QTextBrowser(self.centralwidget)
         self.text_result.setGeometry(QtCore.QRect(40, 500, 921, 251))
         self.text_result.setObjectName("text_result")
-        # 获取图形按钮
-        self.pushButton_new = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_new.setGeometry(QtCore.QRect(40, 425, 75, 25))
-        self.pushButton_new.setObjectName("pushButton_new")
+
         self.grid_widget = grid_widget
-        self.pushButton_new.clicked.connect(self.grid_widget.get_obs_vertices)
-        # 地图栅格化按钮
-        self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_3.setGeometry(QtCore.QRect(220, 425, 75, 25))
-        self.pushButton_3.setObjectName("pushButton_3")
-        # 地图栅格方法
-        self.pushButton_3.clicked.connect(self.grid_widget.rasterize_map)
+
         self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
         self.verticalLayoutWidget.setGeometry(QtCore.QRect(40, 20, 921, 450))
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
@@ -733,6 +720,8 @@ class Ui_MainWindow(object):
         self.menu_map.setObjectName("menu_map")
         self.menu_plan = QtWidgets.QMenu(self.menubar)
         self.menu_plan.setObjectName("menu_plan")
+        self.menu_display = QtWidgets.QMenu(self.menubar)
+        self.menu_display.setObjectName("menu_display")
 
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -750,35 +739,7 @@ class Ui_MainWindow(object):
         self.actionOpen = QtWidgets.QAction(MainWindow)
         self.actionOpen.setObjectName("actionOpen")
         self.actionOpen.triggered.connect(grid_widget.open_map)
-        self.pushButton_5 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_5.setGeometry(QtCore.QRect(180, 455, 80, 23))
-        self.pushButton_5.setObjectName("pushButton_5")
-        self.pushButton_5.clicked.connect(self.open_randomOb)
-        # 随机起始点按钮
-        self.pushButton_6 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_6.setGeometry(QtCore.QRect(550, 455, 80, 23))
-        self.pushButton_6.setObjectName("pushButton_6")
-        self.pushButton_6.clicked.connect(grid_widget.generateRandomStart)
-        # 分析规划按钮
-        self.pushButton_7 = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_7.setGeometry(QtCore.QRect(640, 455, 80, 23))
-        self.pushButton_7.setObjectName("pushButton_7")
-        self.pushButton_7.clicked.connect(self.open_start_path) # 方法
-        # 单路径规划
-        self.pushButton_plan = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_plan.setGeometry(QtCore.QRect(640, 455, 80, 23))
-        self.pushButton_plan.setObjectName("pushButton_plan")
-        self.pushButton_plan.clicked.connect(self.select_method) # 方法
-        # 地图调整
-        self.pushButton_modify_map = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_modify_map.setGeometry(QtCore.QRect(640, 455, 80, 23))
-        self.pushButton_modify_map.setObjectName("pushButton_modify_map")
-        self.pushButton_modify_map.clicked.connect(self.modify_map)  # 方法
-        # 输入起始点按钮
-        self.pushButton_input_startAndEnd = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_input_startAndEnd.setGeometry(QtCore.QRect(640, 455, 80, 23))
-        self.pushButton_input_startAndEnd.setObjectName("pushButton_input_startAndEnd")
-        self.pushButton_input_startAndEnd.clicked.connect(self.startAndEnd)  # 方法
+
         self.actionCreate = QtWidgets.QAction(MainWindow)
         self.actionCreate.setObjectName("actionCreate")
         # 点击菜单连接方法
@@ -802,20 +763,12 @@ class Ui_MainWindow(object):
         self.actionhelp.triggered.connect(self.helpInfo)
         self.actionmodel = QtWidgets.QAction(MainWindow)
         self.actionmodel.setObjectName("actionmodel")
-        # 生成单个图形障碍物可控大小
-        self.pushButton_paint_rand = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_paint_rand.setGeometry(QtCore.QRect(730, 454, 80, 25))
-        self.pushButton_paint_rand.setObjectName("pushButton_paint_rand")
-        self.pushButton_paint_rand.clicked.connect(self.select_graph)
-        # 参数障碍物按钮
-        self.pushButton_ob = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton_ob.setGeometry(QtCore.QRect(730, 454, 80, 25))
-        self.pushButton_ob.setObjectName("pushButton_ob")
-        self.pushButton_ob.clicked.connect(self.open_modifyOb)
+
         # 下载地图模板
         self.actionArithmeticList = QtWidgets.QAction(MainWindow)
         self.actionArithmeticList.setObjectName("actionArithmeticList")
         self.actionArithmeticList.triggered.connect(self.openArithmeticList)
+
         # 随机障碍物
         self.action_random = QtWidgets.QAction(MainWindow)
         self.action_random.setObjectName("action_random")
@@ -880,13 +833,59 @@ class Ui_MainWindow(object):
         self.menu_plan.addAction(self.action_analyse)
         self.menu_plan.addAction(self.action_get)
         self.menu_plan.addAction(self.action_rasterization)
+        # 添加工具栏中选项卡
+        self.select_action1 = self.menu_display.addAction("路径规划")
+        self.select_action1.setCheckable(True)
+        self.select_action1.triggered.connect(lambda:self.add_tool(0))
+
+        self.select_action2 = self.menu_display.addAction("分析规划")
+        self.select_action2.setCheckable(True)
+        self.select_action2.triggered.connect(lambda: self.add_tool(1))
+
+        self.select_action3 = self.menu_display.addAction("获取图形")
+        self.select_action3.setCheckable(True)
+        self.select_action3.triggered.connect(lambda: self.add_tool(2))
+
+        self.select_action4 = self.menu_display.addAction("地图栅格化")
+        self.select_action4.setCheckable(True)
+        self.select_action4.triggered.connect(lambda: self.add_tool(3))
+
+        self.select_action5 = self.menu_display.addAction("清空地图")
+        self.select_action5.setCheckable(True)
+        self.select_action5.triggered.connect(lambda: self.add_tool(4))
+
+        self.select_action6 = self.menu_display.addAction("随机起始点")
+        self.select_action6.setCheckable(True)
+        self.select_action6.triggered.connect(lambda: self.add_tool(5))
+
+        self.select_action7 = self.menu_display.addAction("输入起始点")
+        self.select_action7.setCheckable(True)
+        self.select_action7.triggered.connect(lambda: self.add_tool(6))
+
+        self.select_action8 = self.menu_display.addAction("图形障碍物")
+        self.select_action8.setCheckable(True)
+        self.select_action8.triggered.connect(lambda: self.add_tool(7))
+
+        self.select_action9 = self.menu_display.addAction("参数障碍物")
+        self.select_action9.setCheckable(True)
+        self.select_action9.triggered.connect(lambda: self.add_tool(8))
+
+        self.select_action10 = self.menu_display.addAction("随机障碍物")
+        self.select_action10.setCheckable(True)
+        self.select_action10.triggered.connect(lambda: self.add_tool(9))
+
+        self.select_action11 = self.menu_display.addAction("地图调整")
+        self.select_action11.setCheckable(True)
+        self.select_action11.triggered.connect(lambda: self.add_tool(10))
 
         self.menubar.addAction(self.menu.menuAction())
         self.menubar.addAction(self.menu_ob.menuAction())
         self.menubar.addAction(self.menu_startAndEnd.menuAction())
         self.menubar.addAction(self.menu_map.menuAction())
         self.menubar.addAction(self.menu_plan.menuAction())
+        self.menubar.addAction(self.menu_display.menuAction())
         self.menubar.addAction(self.menu_5.menuAction())
+
         self.toolBar.addAction(self.actionCreate)
         self.toolBar.addAction(self.actionSave)
         self.toolBar.addAction(self.actionOpen)
@@ -905,19 +904,67 @@ class Ui_MainWindow(object):
         self.sideToolBar.setObjectName("sideToolBar")
         # self.sideToolBar.setMovable(False)  # 设置工具栏为不可移动
         MainWindow.addToolBar(QtCore.Qt.ToolBarArea.LeftToolBarArea, self.sideToolBar)
-        self.sideToolBar.addWidget(self.pushButton_plan)
-        self.sideToolBar.addWidget(self.pushButton_7)
-        self.sideToolBar.addWidget(self.pushButton_new)
-        self.sideToolBar.addWidget(self.pushButton_3)
-        self.sideToolBar.addWidget(self.pushButton)
-        self.sideToolBar.addWidget(self.pushButton_6)
-        self.sideToolBar.addWidget(self.pushButton_input_startAndEnd)
-        self.sideToolBar.addWidget(self.pushButton_paint_rand)
-        self.sideToolBar.addWidget(self.pushButton_ob)
-        self.sideToolBar.addWidget(self.pushButton_5)
-        self.sideToolBar.addWidget(self.pushButton_modify_map)
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+    # 常用工具栏动态添加
+    def add_tool(self,index):
+        if index == 0:
+            if self.select_action1.isChecked():
+                self.sideToolBar.addAction(self.action_plan)
+            else:
+                self.sideToolBar.removeAction(self.action_plan)
+        elif index == 1:
+            if self.select_action2.isChecked():
+                self.sideToolBar.addAction(self.action_analyse)
+            else:
+                self.sideToolBar.removeAction(self.action_analyse)
+        elif index == 2:
+            if self.select_action3.isChecked():
+                self.sideToolBar.addAction(self.action_get)
+            else:
+                self.sideToolBar.removeAction(self.action_get)
+        elif index == 3:
+            if self.select_action4.isChecked():
+                self.sideToolBar.addAction(self.action_rasterization)
+            else:
+                self.sideToolBar.removeAction(self.action_rasterization)
+        elif index == 4:
+            if self.select_action5.isChecked():
+                self.sideToolBar.addAction(self.action_empty)
+            else:
+                self.sideToolBar.removeAction(self.action_empty)
+        elif index == 5:
+            if self.select_action6.isChecked():
+                self.sideToolBar.addAction(self.action_randomPoint)
+            else:
+                self.sideToolBar.removeAction(self.action_randomPoint)
+        elif index == 6:
+            if self.select_action7.isChecked():
+                self.sideToolBar.addAction(self.action_input)
+            else:
+                self.sideToolBar.removeAction(self.action_input)
+        elif index == 7:
+            if self.select_action8.isChecked():
+                self.sideToolBar.addAction(self.action_graph)
+            else:
+                self.sideToolBar.removeAction(self.action_graph)
+        elif index == 8:
+            if self.select_action9.isChecked():
+                self.sideToolBar.addAction(self.action_canshu)
+            else:
+                self.sideToolBar.removeAction(self.action_canshu)
+        elif index == 9:
+            if self.select_action10.isChecked():
+                self.sideToolBar.addAction(self.action_random)
+            else:
+                self.sideToolBar.removeAction(self.action_random)
+        elif index == 10:
+            if self.select_action11.isChecked():
+                self.sideToolBar.addAction(self.action_mapModify)
+            else:
+                self.sideToolBar.removeAction(self.action_mapModify)
+
     # 图形障碍物窗口
     def select_graph(self):
         new_window = QtWidgets.QMainWindow()
@@ -1108,13 +1155,11 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "基于Pygame的路径规划算法仿真平台"))
-        self.pushButton.setText(_translate("MainWindow", "清空地图"))
+        # self.pushButton.setText(_translate("MainWindow", "清空地图"))
         self.text_result.setPlaceholderText(_translate("MainWindow", "输出路径规划结果"))
         self.text_result.append(
             "欢迎来到基于Pygame的路径规划算法仿真平台，以下是路径规划的结果仅供大家参考（右键按第一次是起点第二次是终点，左键设置起点）：")
         self.text_result.append("红色为起点、绿色为终点、黑色为障碍点，平台具体方法请点击帮助手册查看！")
-        self.pushButton_new.setText(_translate("MainWindow", "获取图形"))
-        self.pushButton_3.setText(_translate("MainWindow", "地图栅格化"))
         self.menu.setTitle(_translate("MainWindow", "文件"))
         self.menu_5.setTitle(_translate("MainWindow", "关于"))
         self.toolBar.setWindowTitle(_translate("MainWindow", "toolBar"))
@@ -1127,19 +1172,12 @@ class Ui_MainWindow(object):
         self.actionVersion.setText(_translate("MainWindow", "版本信息"))
         self.actionhelp.setText(_translate("MainWindow", "帮助手册"))
         self.actionmodel.setText(_translate("MainWindow", "下载地图模板"))
-        self.pushButton_plan.setText(_translate("MainWindow", "路径规划"))
         self.actionArithmeticList.setText(_translate("MainWindow", "算法列表"))
-        self.pushButton_5.setText(_translate("MainWindow", "随机障碍物"))
-        self.pushButton_6.setText(_translate("MainWindow", "随机起始点"))
-        self.pushButton_7.setText(_translate("MainWindow", "分析规划"))
-        self.pushButton_paint_rand.setText(_translate("MainWindow", "图形障碍物"))
-        self.pushButton_ob.setText(_translate("MainWindow", "参数障碍物"))
-        self.pushButton_modify_map.setText(_translate("MainWindow", "地图调整"))
-        self.pushButton_input_startAndEnd.setText(_translate("MainWindow", "输入起始点"))
         self.menu_ob.setTitle(_translate("MainWindow", "障碍物设置"))
         self.menu_startAndEnd.setTitle(_translate("MainWindow", "起始点设置"))
         self.menu_map.setTitle(_translate("MainWindow", "地图设置"))
         self.menu_plan.setTitle(_translate("MainWindow", "路径规划"))
+        self.menu_display.setTitle(_translate("MainWindow", "常用工具栏"))
         self.action_random.setText(_translate("MainWindow", "随机障碍物"))
         self.action_canshu.setText(_translate("MainWindow", "参数障碍物"))
         self.action_graph.setText(_translate("MainWindow", "图形障碍物"))
