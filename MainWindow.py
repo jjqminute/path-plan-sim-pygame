@@ -70,6 +70,9 @@ class Ui_MainWindow(object):
         checkbox5 = QCheckBox("矩形", MainWindow)
         checkbox5.setGeometry(210, 180, 150, 30)  # 设置多选框位置和大小
 
+        # 不规则障碍物
+        checkbox6 = QCheckBox("不规则", MainWindow)
+        checkbox6.setGeometry(280, 180, 150, 30)
         # 创建障碍物是否重叠
         label_type = QLabel("障碍物重叠:", MainWindow)
         label_type.setGeometry(60, 210, 80, 30)  # 设置标签位置和大小
@@ -100,7 +103,7 @@ class Ui_MainWindow(object):
                 return
             obstacle_size = slider.value()
             obstacle_types = []
-            if not checkbox1.isChecked() and not checkbox2.isChecked() and not checkbox3.isChecked() and not checkbox4.isChecked() and not checkbox5.isChecked():
+            if not checkbox1.isChecked() and not checkbox2.isChecked() and not checkbox3.isChecked() and not checkbox4.isChecked() and not checkbox5.isChecked() and not checkbox6.isChecked():
                 label_notice.setText("请选择至少一种障碍物类型！")
                 return
             if checkbox1.isChecked():
@@ -113,6 +116,8 @@ class Ui_MainWindow(object):
                 obstacle_types.append(3)
             if checkbox5.isChecked():
                 obstacle_types.append(4)
+            if checkbox6.isChecked():
+                obstacle_types.append(5)
             if not radio_button_ok.isChecked() and not radio_button_no.isChecked():
                 label_notice.setText("请选择障碍物是否重叠！")
                 return

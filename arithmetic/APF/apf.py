@@ -2,11 +2,12 @@ import math
 import time
 import random
 
+import numpy as np
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout
 from shapely.geometry import Point, Polygon
 import pygame
 from shapely.ops import nearest_points
-
+from scipy.interpolate import splprep, splev
 from arithmetic.APF.Node import point
 
 
@@ -117,6 +118,61 @@ class apf:
 
         return escape_x, escape_y
 
+    def smooth_path(self,path_points):
+        """
+        Smooth the given path points using B-spline.
+
+        Parameters:
+        path_points (list of tuples): A list of (x, y) points defining the path.
+
+        Returns:
+        list of tuples: The smoothed path points.
+        """
+        if len(path_points) < 3:
+            return path_points
+
+        x = [p[0] for p in path_points]
+        y = [p[1] for p in path_points]
+
+        tck, u = splprep([x, y], s=0.0, per=False)
+        u_new = np.linspace(u.min(), u.max(), len(path_points))
+        x_new, y_new = splev(u_new, tck, der=0)
+
+        smoothed_path = [(x_new[i], y_new[i]) for i in range(len(x_new))]
+        return smoothed_path
+
+    def remove_oscillations(self,path_points, angle_threshold=0.1):
+        """
+        Remove oscillations from the path by detecting and removing points with high angle changes.
+
+        Parameters:
+        path_points (list of tuples): A list of (x, y) points defining the path.
+        angle_threshold (float): The threshold for angle change to detect oscillations.
+
+        Returns:
+        list of tuples: The path points with oscillations removed.
+        """
+        if len(path_points) < 3:
+            return path_points
+
+        def angle_between_points(p1, p2, p3):
+            v1 = np.array(p2) - np.array(p1)
+            v2 = np.array(p3) - np.array(p2)
+            angle = np.arctan2(np.linalg.det([v1, v2]), np.dot(v1, v2))
+            return np.abs(angle)
+
+        filtered_path = [path_points[0]]
+        for i in range(1, len(path_points) - 1):
+            p1 = path_points[i - 1]
+            p2 = path_points[i]
+            p3 = path_points[i + 1]
+
+            angle = angle_between_points(p1, p2, p3)
+            if angle < angle_threshold:
+                filtered_path.append(p2)
+
+        filtered_path.append(path_points[-1])
+        return filtered_path
     def plan(self,plan_surface):
         # 寻找路径的方法
         current_point = self.start
@@ -127,7 +183,7 @@ class apf:
             # 斥力向量
             repulsion_x, repulsion_y = self.calculate_repulsion(current_point)
             #边界斥力
-            boundary_repulsion_x, boundary_repulsion_y = self.calculate_boundary_repulsion(current_point)
+            boundary_repulsion_x, boundary_repulsion_y = self.calculate_repulsion(current_point)
 
             # 合力向量
             total_force_x = attraction_x + repulsion_x + boundary_repulsion_x
@@ -158,7 +214,10 @@ class apf:
             if self.count > 10000:  # 避免无限循环
                 print("没有可行路径或陷入局部极小值点！！！！！！！")
                 break;
-        end_time = time.time();
+
+        end_time = time.time()
+        filtered_path = self.remove_oscillations(self.result)
+        smoothed_path = self.smooth_path(filtered_path)
         print("花费时间为")
         print(end_time - start_time)
-        return self.result
+        return smoothed_path,end_time - start_time

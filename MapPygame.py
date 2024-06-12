@@ -3,6 +3,7 @@ import re
 import sys
 import time
 
+import numpy as np
 import pygame
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QFileDialog
 from PyQt5.QtWidgets import QFrame
@@ -21,7 +22,7 @@ import geopandas as gpd
 from shapely.geometry import Point, MultiPoint, shape
 import cv2
 import numpy
-
+from scipy.interpolate import splprep, splev
 from arithmetic.APF.apf import apf
 from arithmetic.Astar.Map import Map
 from arithmetic.Astar.astar import astar
@@ -972,7 +973,25 @@ class PygameWidget(QWidget):
                     if x < obstacle_x + obstacle_width and x + width > obstacle_x and y < obstacle_y + obstacle_height and y + height > obstacle_y:
                         return True
                 return False
+            def generate_smooth_blob(center, max_radius, irregularity=0.1, spikeyness=0.1, num_vertices=20):
+                angle_steps = np.linspace(0, 2 * np.pi, num_vertices, endpoint=False)
+                angle_steps += np.random.normal(0, irregularity, num_vertices)
 
+                points = []
+                for angle in angle_steps:
+                    radius = max_radius * (1 + np.random.uniform(-spikeyness, spikeyness))
+                    x = center[0] + radius * np.cos(angle)
+                    y = center[1] + radius * np.sin(angle)
+                    points.append((x, y))
+
+                points.append(points[0])  # Closing the loop
+
+                points = np.array(points)
+                tck, u = splprep([points[:, 0], points[:, 1]], s=0.5, per=True)
+                u_new = np.linspace(u.min(), u.max(), 100)
+                x_new, y_new = splev(u_new, tck, der=0)
+
+                return list(zip(x_new, y_new))
             # 根据用户输入的数量输出障碍物
             for _ in range(int(quantity)):
                 retries = 0
@@ -1028,6 +1047,25 @@ class PygameWidget(QWidget):
                             obstacles.append((x, y, width, height))
                             pygame.draw.rect(self.obs_surface, self.obs_color, (x, y, width, height))
                             break
+                    elif shape_type == 5:  # 不规则形状
+
+                        max_radius = random.randrange(15,50)
+                        center = (max_radius, max_radius)
+                        points = generate_smooth_blob(center, max_radius)
+                        if len(points) >= 3:  # 确保有足够的点数
+                            offset_x = random.randrange(0, self.width - int(size))
+                            offset_y = random.randrange(0, self.height - int(size))
+                            points = [(x + offset_x, y + offset_y) for x, y in points]
+                            bounding_box = pygame.Rect(min(x for x, y in points), min(y for x, y in points),
+                                                       max(x for x, y in points) - min(x for x, y in points),
+                                                       max(y for x, y in points) - min(y for x, y in points))
+                            if not is_overlapping(bounding_box.left, bounding_box.top, bounding_box.width,
+                                                  bounding_box.height):
+                                obstacles.append(
+                                    (bounding_box.left, bounding_box.top, bounding_box.width, bounding_box.height))
+                                pygame.draw.polygon(self.obs_surface, self.obs_color, points)
+                                break
+
                     retries += 1
 
 

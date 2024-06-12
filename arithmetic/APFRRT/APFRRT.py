@@ -25,8 +25,8 @@ class APFRRT():
         self.obstacle = mapdata.obs_surface
         # APF参数
         self.attraction_coeff = 5.0  # 吸引力系数
-        self.repulsion_coeff = 5000.0  # 斥力系数
-        self.repulsion_threshold = 200  # 斥力作用距离阈值
+        self.repulsion_coeff = 1000.0  # 斥力系数
+        self.repulsion_threshold = 500  # 斥力作用距离阈值
         # 检测震荡参数
         self.position_history = []  # 用于存储历史位置的列表
         self.history_size = 100  # 检测震荡时的点是否大于这个值
@@ -112,7 +112,7 @@ class APFRRT():
         #print (total_force_x, total_force_y)
         # 计算随机点的偏移量
         magnitude = math.sqrt(total_force_x ** 2 + total_force_y ** 2)
-        if magnitude > 0 and (total_force_x >1or total_force_y >1):
+        if magnitude > 0 and (total_force_x >0.5or total_force_y >0.5):
             # 根据势场和斥力的合力方向调整随机点的偏移量
             offset_factor = 1.2
             #随机性更强

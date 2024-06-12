@@ -35,11 +35,11 @@ class astar:  # 核心部分，寻路类
 
     # 计算F值
     def cal_F(self, loc):
-        print('计算值：', loc)
+        #print('计算值：', loc)
         G = loc.father.G + loc.cost
         H = self.getEstimate(loc)
         F = G + H
-        print("F=%d G=%d H=%d" % (F, G, H))
+        #print("F=%d G=%d H=%d" % (F, G, H))
         return {'G': G, 'H': H, 'F': F}
 
     def F_Min(self):  # 搜索open列表中F值最小的点并将其返回，同时判断open列表是否为空，为空则代表搜索失败
