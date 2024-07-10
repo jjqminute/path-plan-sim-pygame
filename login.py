@@ -2,7 +2,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtGui import QColor, QPainter
 from PyQt5.QtWidgets import QWidget, QDialog, QMainWindow, QMessageBox
 
-from MainWindow import Ui_MainWindow
+from MainWindow import MainWindow
 from GridWidget import GridWidget
 
 
@@ -93,7 +93,7 @@ class Ui_Form(object):
             if self.mainWindow_new is None:
                 # 创建新的窗口实例
                 self.mainWindow_new = QMainWindow()
-                ui_main = Ui_MainWindow()
+                ui_main = MainWindow()
                 grid_widget = GridWidget(ui_main)
                 ui_main.setupUi(self.mainWindow_new, grid_widget)
 

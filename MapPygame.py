@@ -22,17 +22,18 @@ from shapely.geometry import Point, MultiPoint, shape
 import cv2
 import numpy
 
-from arithmetic.APF.apf import apf
+""" from arithmetic.APF.apf import apf
 from arithmetic.Astar.Map import Map
 from arithmetic.Astar.astar import astar
 from arithmetic.RRT.rrt import Rrt
-
-from result import Result_Demo
-
 from arithmetic.RRT.rrt import Rrt
 from arithmetic.APFRRT.APFRRT import APFRRT
 from arithmetic.PRM.prm import prm
-from arithmetic.PRM.iprm import iprm
+from arithmetic.PRM.iprm import iprm """
+
+from result import Result_Demo
+
+
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 

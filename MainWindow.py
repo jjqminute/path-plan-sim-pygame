@@ -1,4 +1,6 @@
 import re
+import os
+import importlib
 import threading
 import matplotlib.pyplot as plt
 
@@ -9,16 +11,272 @@ from PyQt5.QtWidgets import QWidget, QMainWindow, QMessageBox, QApplication, QFi
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 from AlgorithmList import AlgorithmList
-# from GridWidget import GridWidget
+
 from MapPygame import PygameWidget
 from result import load_demo, Category_Demo, Category_Compare
 
+def list_algorithm_modules(folder_path):
+        algorithm_modules = []
+        files = os.listdir(folder_path)
+        for file in files:
+            module_path = os.path.join(folder_path, file)
+            if os.path.isdir(module_path) and '__init__.py' in os.listdir(module_path):
+                algorithm_name = os.path.basename(module_path)
+                algorithm_modules.append(algorithm_name)
+        return algorithm_modules
 
-class Ui_MainWindow(object):
+def load_main_algorithm(module_path):
+    module_name = os.path.basename(module_path)
+    module = importlib.import_module(f'algorithms.{module_name}.main_algorithm')
+    return module.Main
+
+def list_algorithm_classes(algorithm_modules):
+    algorithm_classes = []
+    for module in algorithm_modules:
+        algorithm_class = load_main_algorithm(module)
+        algorithm_classes.append(algorithm_class)
+    return algorithm_classes
+
+class MainWindow(QMainWindow):
     windows = []  # 存储所有创建的窗口实例
+    def __init__(self):
+        super().__init__()
+        self.loginWindow_new = None
+        self.setObjectName("MainWindow")
+        self.resize(1050, 850)
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap("./img/logo.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        self.setWindowIcon(icon)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
+        self.setSizePolicy(sizePolicy)
+        self.setMinimumSize(QtCore.QSize(1050, 850))
+        self.setMaximumSize(QtCore.QSize(1050, 850))
+        self.centralwidget = QtWidgets.QWidget(self)
+        self.centralwidget.setObjectName("centralwidget")
+
+        self.text_result = QtWidgets.QTextBrowser(self.centralwidget)
+        self.text_result.setGeometry(QtCore.QRect(40, 500, 921, 251))
+        self.text_result.setObjectName("text_result")
+
+        self.pygame_widget = PygameWidget(self)
+
+        self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
+        self.verticalLayoutWidget.setGeometry(QtCore.QRect(40, 20, 921, 450))
+        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
+        self.layout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setObjectName("layout")
+        self.setCentralWidget(self.centralwidget)
+        self.menubar = QtWidgets.QMenuBar(self)
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1006, 23))
+        self.menubar.setObjectName("menubar")
+        self.menu = QtWidgets.QMenu(self.menubar)
+        self.menu.setObjectName("menu")
+        self.menu_5 = QtWidgets.QMenu(self.menubar)
+        self.menu_5.setObjectName("menu_5")
+        # 添加新的工具栏
+        self.menu_ob = QtWidgets.QMenu(self.menubar)
+        self.menu_ob.setObjectName("menu_ob")
+        self.menu_startAndEnd = QtWidgets.QMenu(self.menubar)
+        self.menu_startAndEnd.setObjectName("menu_startAndEnd")
+        self.menu_map = QtWidgets.QMenu(self.menubar)
+        self.menu_map.setObjectName("menu_map")
+        self.menu_plan = QtWidgets.QMenu(self.menubar)
+        self.menu_plan.setObjectName("menu_plan")
+        self.menu_display = QtWidgets.QMenu(self.menubar)
+        self.menu_display.setObjectName("menu_display")
+
+        self.setMenuBar(self.menubar)
+        self.statusbar = QtWidgets.QStatusBar(self)
+        self.statusbar.setObjectName("statusbar")
+        self.setStatusBar(self.statusbar)
+        self.toolBar = QtWidgets.QToolBar(self)
+        self.toolBar.setObjectName("toolBar")
+        self.addToolBar(QtCore.Qt.ToolBarArea.TopToolBarArea, self.toolBar)
+        self.toolBar.setMovable(False)  # 设置工具栏为不可移动
+        self.actionLoadTest = QtWidgets.QAction(self)
+        self.actionLoadTest.setObjectName("actionLoadTest")
+        self.actionExit = QtWidgets.QAction(self)
+        self.actionExit.setObjectName("actionExit")
+        self.actionExit.triggered.connect(self.loginOut)
+        self.actionOpen = QtWidgets.QAction(self)
+        self.actionOpen.setObjectName("actionOpen")
+        self.actionOpen.triggered.connect(self.pygame_widget.open_map)
+
+        self.actionCreate = QtWidgets.QAction(self)
+        self.actionCreate.setObjectName("actionCreate")
+        # 点击菜单连接方法
+        self.actionCreate.triggered.connect(self.openNewWindow)
+        # 点击菜单退出方法
+        self.actionExit.triggered.connect(self.loginOut)
+        self.actionSave = QtWidgets.QAction(self)
+        self.actionSave.setObjectName("actionSave")
+        # 保存地图的方法
+        self.actionSave.triggered.connect(self.pygame_widget.save_map)
+        self.createArithmetic = QtWidgets.QAction(self)
+        self.createArithmetic.setObjectName("createArithmetic")
+        self.createArithmetic.triggered.connect(self.openArithmeticList)
+        self.actionVersion = QtWidgets.QAction(self)
+        self.actionVersion.setObjectName("actionVersion")
+        # 版本信息弹出框链接
+        self.actionVersion.triggered.connect(self.versionInformation)
+        self.actionhelp = QtWidgets.QAction(self)
+        self.actionhelp.setObjectName("actionhelp")
+        # 帮助手册弹出框链接
+        self.actionhelp.triggered.connect(self.helpInfo)
+        self.actionmodel = QtWidgets.QAction(self)
+        self.actionmodel.setObjectName("actionmodel")
+
+        # 下载地图模板
+        self.actionArithmeticList = QtWidgets.QAction(self)
+        self.actionArithmeticList.setObjectName("actionArithmeticList")
+        self.actionArithmeticList.triggered.connect(self.openArithmeticList)
+
+        # 随机障碍物
+        self.action_random = QtWidgets.QAction(self)
+        self.action_random.setObjectName("action_random")
+        self.action_random.triggered.connect(self.open_randomOb)
+        # 参数障碍物
+        self.action_canshu = QtWidgets.QAction(self)
+        self.action_canshu.setObjectName("action_canshu")
+        self.action_canshu.triggered.connect(self.open_modifyOb)
+        # 图形障碍物
+        self.action_graph = QtWidgets.QAction(self)
+        self.action_graph.setObjectName("action_graph")
+        self.action_graph.triggered.connect(self.select_graph)
+        # 随机起始点
+        self.action_randomPoint = QtWidgets.QAction(self)
+        self.action_randomPoint.setObjectName("action_randomPoint")
+        self.action_randomPoint.triggered.connect(self.pygame_widget.generateRandomStart)
+        # 输入起始点
+        self.action_input = QtWidgets.QAction(self)
+        self.action_input.setObjectName("action_input")
+        self.action_input.triggered.connect(self.startAndEnd)
+        # 清空地图
+        self.action_empty = QtWidgets.QAction(self)
+        self.action_empty.setObjectName("action_empty")
+        self.action_empty.triggered.connect(self.pygame_widget.clear_map)
+        # 调整栅格大小
+        self.action_mapModify = QtWidgets.QAction(self)
+        self.action_mapModify.setObjectName("action_mapModify")
+        self.action_mapModify.triggered.connect(self.modify_map)
+        # 路径规划
+        self.action_plan = QtWidgets.QAction(self)
+        self.action_plan.setObjectName("action_plan")
+        self.action_plan.triggered.connect(self.select_method)
+        # 分析规划
+        self.action_analyse = QtWidgets.QAction(self)
+        self.action_analyse.setObjectName("action_analyse")
+        self.action_analyse.triggered.connect(self.open_start_path)
+        # 获取图形
+        self.action_get = QtWidgets.QAction(self)
+        self.action_get.setObjectName("action_get")
+        self.action_get.triggered.connect(self.pygame_widget.get_obs_vertices)
+        # 栅格化地图
+        self.action_rasterization = QtWidgets.QAction(self)
+        self.action_rasterization.setObjectName("action_rasterization")
+        self.action_rasterization.triggered.connect(self.pygame_widget.rasterize_map)
+        self.menu.addAction(self.actionCreate)
+        self.menu.addAction(self.actionOpen)
+        self.menu.addAction(self.actionSave)
+        self.menu.addAction(self.createArithmetic)
+        self.menu.addAction(self.actionmodel)
+        self.menu.addAction(self.actionArithmeticList)
+        self.menu_5.addAction(self.actionExit)
+        self.menu_5.addAction(self.actionVersion)
+        self.menu_5.addAction(self.actionhelp)
+        self.menu_ob.addAction(self.action_random)
+        self.menu_ob.addAction(self.action_canshu)
+        self.menu_ob.addAction(self.action_graph)
+        self.menu_startAndEnd.addAction(self.action_randomPoint)
+        self.menu_startAndEnd.addAction(self.action_input)
+        self.menu_map.addAction(self.action_empty)
+        self.menu_map.addAction(self.action_mapModify)
+        self.menu_plan.addAction(self.action_plan)
+        self.menu_plan.addAction(self.action_analyse)
+        self.menu_plan.addAction(self.action_get)
+        self.menu_plan.addAction(self.action_rasterization)
+        # 添加工具栏中选项卡
+        self.select_action1 = self.menu_display.addAction("路径规划")
+        self.select_action1.setCheckable(True)
+        self.select_action1.triggered.connect(lambda:self.add_tool(0))
+
+        self.select_action2 = self.menu_display.addAction("分析规划")
+        self.select_action2.setCheckable(True)
+        self.select_action2.triggered.connect(lambda: self.add_tool(1))
+
+        self.select_action3 = self.menu_display.addAction("获取图形")
+        self.select_action3.setCheckable(True)
+        self.select_action3.triggered.connect(lambda: self.add_tool(2))
+
+        self.select_action4 = self.menu_display.addAction("地图栅格化")
+        self.select_action4.setCheckable(True)
+        self.select_action4.triggered.connect(lambda: self.add_tool(3))
+
+        self.select_action5 = self.menu_display.addAction("清空地图")
+        self.select_action5.setCheckable(True)
+        self.select_action5.triggered.connect(lambda: self.add_tool(4))
+
+        self.select_action6 = self.menu_display.addAction("随机起始点")
+        self.select_action6.setCheckable(True)
+        self.select_action6.triggered.connect(lambda: self.add_tool(5))
+
+        self.select_action7 = self.menu_display.addAction("输入起始点")
+        self.select_action7.setCheckable(True)
+        self.select_action7.triggered.connect(lambda: self.add_tool(6))
+
+        self.select_action8 = self.menu_display.addAction("图形障碍物")
+        self.select_action8.setCheckable(True)
+        self.select_action8.triggered.connect(lambda: self.add_tool(7))
+
+        self.select_action9 = self.menu_display.addAction("参数障碍物")
+        self.select_action9.setCheckable(True)
+        self.select_action9.triggered.connect(lambda: self.add_tool(8))
+
+        self.select_action10 = self.menu_display.addAction("随机障碍物")
+        self.select_action10.setCheckable(True)
+        self.select_action10.triggered.connect(lambda: self.add_tool(9))
+
+        self.select_action11 = self.menu_display.addAction("地图栅格大小调整")
+        self.select_action11.setCheckable(True)
+        self.select_action11.triggered.connect(lambda: self.add_tool(10))
+
+        self.menubar.addAction(self.menu.menuAction())
+        self.menubar.addAction(self.menu_ob.menuAction())
+        self.menubar.addAction(self.menu_startAndEnd.menuAction())
+        self.menubar.addAction(self.menu_map.menuAction())
+        self.menubar.addAction(self.menu_plan.menuAction())
+        self.menubar.addAction(self.menu_display.menuAction())
+        self.menubar.addAction(self.menu_5.menuAction())
+
+        self.toolBar.addAction(self.actionCreate)
+        self.toolBar.addAction(self.actionSave)
+        self.toolBar.addAction(self.actionOpen)
+        self.toolBar.addAction(self.actionmodel)
+        self.toolBar.addAction(self.actionExit)
+
+        self.toolBar.addAction(self.actionCreate)
+        self.toolBar.addAction(self.actionSave)
+        self.toolBar.addAction(self.actionOpen)
+        self.toolBar.addAction(self.actionmodel)
+        self.toolBar.addAction(self.actionhelp)
+        self.toolBar.addAction(self.actionArithmeticList)
+        self.toolBar.addAction(self.actionExit)
+        # 侧边栏
+        self.sideToolBar = QtWidgets.QToolBar(self)
+        self.sideToolBar.setObjectName("sideToolBar")
+        # self.sideToolBar.setMovable(False)  # 设置工具栏为不可移动
+        self.addToolBar(QtCore.Qt.ToolBarArea.LeftToolBarArea, self.sideToolBar)
+        self.retranslateUi(self)
+        QtCore.QMetaObject.connectSlotsByName(self)
+
+        self.layout.addWidget(self.pygame_widget)
 
     # 参数障碍物窗口 根据用户选择生成相同大小障碍物
-    def modify_obstacles(self, MainWindow, grid_widget):
+    def modify_obstacles(self, MainWindow, pygame_widget):
         self.loginWindow_new = None
         MainWindow.setObjectName("MainWindow")
         MainWindow.setFixedSize(400, 300) # 窗口大小锁定
@@ -119,14 +377,14 @@ class Ui_MainWindow(object):
                 obstacle_overlap = "T"
             elif radio_button_no.isChecked():
                 obstacle_overlap = "F"
-            grid_widget.graph_setting(obstacle_quantity, obstacle_size, obstacle_types, obstacle_overlap)
+            pygame_widget.graph_setting(obstacle_quantity, obstacle_size, obstacle_types, obstacle_overlap)
             label_notice.setText("障碍物生成成功！")
 
         # 连接按钮的点击信号
         self.button_generate_obstacle.clicked.connect(on_button_click)
 
     # TODO 开始规划选择算法窗口
-    def start_path(self, MainWindow, grid_widget):
+    def start_path(self, MainWindow, pygame_widget):
         self.loginWindow_new = None
         MainWindow.setObjectName("MainWindow")
         MainWindow.setFixedSize(400, 300)
@@ -201,7 +459,7 @@ class Ui_MainWindow(object):
 
 
     # 随机障碍物提示输入障碍物数量窗口
-    def random_ob(self, MainWindow, grid_widget):
+    def random_ob(self, MainWindow, pygame_widget):
         self.loginWindow_new = None
         MainWindow.setObjectName("随机障碍物")
         MainWindow.setFixedSize(300, 120)
@@ -223,151 +481,17 @@ class Ui_MainWindow(object):
             if not obstacle_quantity:
                 label_notice.setText("请输入障碍物数量！")
                 return
-            grid_widget.random_graph_new(int(obstacle_quantity))
+            pygame_widget.random_graph_new(int(obstacle_quantity))
             label_notice.setText("障碍物生成成功！")
         # 连接按钮的点击信号
         self.button_generate_obstacle.clicked.connect(on_button_click)
 
-    # 路径规划选择算法
-    def select_arithmetic(self, MainWindow, grid_widget):
-        self.loginWindow_new = None
-        MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(500, 250)
-        # 创建选择算法标签
-        self.label_analyse = QLabel("选择算法:", MainWindow)
-        self.label_analyse.setGeometry(30, 30, 80, 30)  # 设置标签位置和大小
-        # 创建单选按钮组
-        radio_button_group = QButtonGroup(MainWindow)
-        radio_button_group.setExclusive(True)  # 设置为互斥，只能选择一个单选按钮
-        # 创建A*算法单选按钮
-        radio_button_astar = QRadioButton("AStar", MainWindow)
-        radio_button_astar.setGeometry(90, 30, 80, 30)  # 设置单选按钮位置和大小
-        radio_button_group.addButton(radio_button_astar)  # 将单选按钮添加到单选按钮组
-        # 创建RRT算法单选按钮
-        radio_button_rrt = QRadioButton("RRT", MainWindow)
-        radio_button_rrt.setGeometry(155, 30, 80, 30)  # 设置单选按钮位置和大小
-        radio_button_group.addButton(radio_button_rrt)  # 将单选按钮添加到单选按钮组
-        # 创建APF算法单选按钮
-        radio_button_apf = QRadioButton("APF", MainWindow)
-        radio_button_apf.setGeometry(210, 30, 80, 30)  # 设置单选按钮位置和大小
-        radio_button_group.addButton(radio_button_apf)  # 将单选按钮添加到单选按钮组
-        # 创建RRT-APF算法单选按钮
-        radio_button_RRTapf = QRadioButton("RRT-APF", MainWindow)
-        radio_button_RRTapf.setGeometry(270, 30, 80, 30)  # 设置单选按钮位置和大小
-        radio_button_group.addButton(radio_button_RRTapf)  # 将单选按钮添加到单选按钮组
-        #PRM
-        radio_button_PRM = QRadioButton("PRM", MainWindow)
-        radio_button_PRM.setGeometry(370, 30, 80, 30)  # 设置单选按钮位置和大小
-        radio_button_group.addButton(radio_button_PRM)
-        #IPRM
-        radio_button_IPRM = QRadioButton("IPRM", MainWindow)
-        radio_button_IPRM.setGeometry(470, 30, 80, 30)  # 设置单选按钮位置和大小
-        radio_button_group.addButton(radio_button_IPRM)
-        # 保存结果部分
-        label_result = QLabel("是否保存结果:", MainWindow)
-        label_result.setGeometry(30, 60, 80, 30)
-        radio_button_result = QButtonGroup(MainWindow)
-        radio_button_result.setExclusive(True)
-        radio_button_result_true = QRadioButton("是", MainWindow)
-        radio_button_result_true.setGeometry(110, 60, 80, 30)
-        radio_button_result.addButton(radio_button_result_true)
-        radio_button_result_false = QRadioButton("否", MainWindow)
-        radio_button_result_false.setGeometry(170, 60, 80, 30)
-        radio_button_result_false.setChecked(True)  # 默认是不保存结果
-        radio_button_result.addButton(radio_button_result_false)
-        # 运行次数部分
-        label_run = QLabel("是否运行多次:", MainWindow)
-        label_run.setGeometry(30, 90, 80, 30)
-        radio_button_run = QButtonGroup(MainWindow)
-        radio_button_run.setExclusive(True)
-        radio_button_run_true = QRadioButton("是", MainWindow)
-        radio_button_run_true.setGeometry(110, 90, 80, 30)
-        radio_button_run.addButton(radio_button_run_true)
-        radio_button_run_false = QRadioButton("否", MainWindow)
-        radio_button_run_false.setGeometry(170, 90, 80, 30)
-        radio_button_run_false.setChecked(True)  # 默认是只运行一次
-        radio_button_run.addButton(radio_button_run_false)
-        # 设置结果文件名称的部分
-        label_path = QLabel("",MainWindow)
-        label_path.setGeometry(30, 120, 200, 30)
-        line_edit_result = QLineEdit("", MainWindow)
-        line_edit_result.setPlaceholderText("请输入文件名")
-        line_edit_result.setGeometry(90, 150, 120, 30)
-        line_edit_result.hide()  # 默认是不保存结果,所以先隐藏
-        # 选择运行次数部分
-        spin_box = QSpinBox(MainWindow)  # 数字选择框
-        spin_box.setGeometry(30, 180, 50, 30)
-        spin_box.setMinimum(0)  # 设置最小值
-        spin_box.setMaximum(100)  # 设置最大值
-        spin_box.setValue(1)  # 设置默认值
-        spin_box.hide()  # 默认是运行一次,所以先隐藏
-        def on_result_click(button):
-            if button == radio_button_result_true:
-                select_folder = QFileDialog.getExistingDirectory(MainWindow, "选择文件夹", "")
-                label_path.setText(select_folder)
-                line_edit_result.show()
-            else:
-                line_edit_result.hide()
-        radio_button_result.buttonClicked.connect(on_result_click)
-        def on_run_click(button):
-            if button == radio_button_run_true:
-                spin_box.show()
-            else:
-                spin_box.hide()
-        radio_button_run.buttonClicked.connect(on_run_click)
-        # 创建生成障碍物按钮
-        self.button_generate_obstacle = QPushButton("开始规划", MainWindow)
-        self.button_generate_obstacle.setGeometry(90, 180, 120, 30)  # 设置按钮位置和大小
 
-        label_notice = QLabel("", MainWindow)
-        label_notice.setGeometry(80, 210, 150, 30)  # 设置标签位置和大小
-
-        def on_button_click():
-            if not radio_button_astar.isChecked() and not radio_button_rrt.isChecked() and not radio_button_apf.isChecked() and not radio_button_RRTapf and not radio_button_PRM:
-                label_notice.setText("请选择规划路径所用算法！")
-                return
-            # 检测路径是否合法
-            if radio_button_result_true.isChecked() and label_path.text() == "":
-                label_notice.setText("请选择文件!")
-                radio_button_result_false.setChecked(True)
-                return
-            # 获取循环次数
-            if radio_button_run_true.isChecked():
-                spin_box_value = spin_box.value()
-            else:
-                spin_box_value = 1
-            for i in range(spin_box_value):
-                track = []  # 算法执行所得的路径
-                time = None  # 算法花费的时间
-                if radio_button_astar.isChecked():
-                    obstacle_overlap = "Astar"
-                    track, time = grid_widget.startAstar()
-                elif radio_button_rrt.isChecked():
-                    obstacle_overlap = "RRT"
-                    track, time = grid_widget.startRtt()
-                elif radio_button_apf.isChecked():
-                    obstacle_overlap = "APF"
-                    track, time = grid_widget.startApf()
-                elif radio_button_RRTapf.isChecked():
-                    obstacle_overlap = "RRT-APF"
-                    track, time = grid_widget.startApfRrt()
-                elif radio_button_PRM.isChecked():
-                    obstacle_overlap = "PRM"
-                    track, time = grid_widget.startPRm()
-                elif radio_button_IPRM.isChecked():
-                    obstacle_overlap = "IPRM"
-                    track, time = grid_widget.startIPRm()
-                label_notice.setText("正在规划路径！")
-                # 保存结果部分
-                if radio_button_result_true.isChecked():
-                    filepath = label_path.text()+"/"+line_edit_result.text()+str(i)+".txt"
-                    grid_widget.save_result(time1=time, track=track, file_path=filepath)
-
-        # 连接按钮的点击信号
-        self.button_generate_obstacle.clicked.connect(on_button_click)
+    
+    
 
     # 地图栅格大小调整
-    def map(self, MainWindow, grid_widget):
+    def map(self, MainWindow, pygame_widget):
         self.loginWindow_new = None
         MainWindow.setObjectName("地图参数")
         MainWindow.setFixedSize(300, 120)
@@ -393,7 +517,7 @@ class Ui_MainWindow(object):
                 return
             try:
                 int(obstacle_quantity)
-                grid_widget.modifyMap(int(obstacle_quantity))
+                pygame_widget.modifyMap(int(obstacle_quantity))
             except (ValueError, TypeError):
                 label_notice.setText("请输入正确的整型栅格大小！")
                 return
@@ -404,7 +528,7 @@ class Ui_MainWindow(object):
         self.button_modify.clicked.connect(on_button_click)
 
     # 起始点输入窗口
-    def input_startAndEnd(self, MainWindow, grid_widget):
+    def input_startAndEnd(self, MainWindow, pygame_widget):
         self.loginWindow_new = None
         MainWindow.setObjectName("地图起始点")
         MainWindow.setFixedSize(300, 160)
@@ -447,7 +571,7 @@ class Ui_MainWindow(object):
                 keyy = int(match.group(2))  # 提取纵坐标
                 print("起点横坐标:", keyx)
                 print("起点纵坐标:", keyy)
-                grid_widget.painting_ori(keyx, keyy)  # 目前执行到这里程序就结束了，应该是调用有问题
+                pygame_widget.painting_ori(keyx, keyy)  # 目前执行到这里程序就结束了，应该是调用有问题
             else:
                 print("坐标格式不正确")
             match_2 = re.match(pattern, end)
@@ -457,7 +581,7 @@ class Ui_MainWindow(object):
                 keyy_2 = int(match_2.group(2))  # 提取纵坐标
                 print("终点横坐标:", keyx_2)
                 print("终点纵坐标:", keyy_2)
-                grid_widget.painting_end(keyx_2, keyy_2)
+                pygame_widget.painting_end(keyx_2, keyy_2)
             else:
                 print("坐标格式不正确")
             label_notice.setText("输入起始点生成成功！")
@@ -465,7 +589,7 @@ class Ui_MainWindow(object):
         self.button_modify.clicked.connect(on_button_click)
 
     # 选择图形障碍物生成窗口 单个生成
-    def graph_ob(self, MainWindow, grid_widget):
+    def graph_ob(self, MainWindow, pygame_widget):
         self.loginWindow_new = None
         MainWindow.setObjectName("图形障碍物")
         MainWindow.setFixedSize(300, 120)
@@ -490,16 +614,16 @@ class Ui_MainWindow(object):
         # 按钮点击事件处理函数
         def on_button_click():
             selected_index = self.combo_box.currentIndex()
-            grid_widget.paint_random_one(selected_index+1)
+            pygame_widget.paint_random_one(selected_index+1)
             label_notice.setText("障碍物生成成功！")
         # 连接按钮的点击信号到处理函数
         self.button_modify.clicked.connect(on_button_click)
 
-    def result_single(self, MainWindow, grid_widget, index, f):
+    def result_single(self, MainWindow, pygame_widget, index, f):
         """
         结果分析窗口设计
         :param MainWindow: 当前窗体
-        :param grid_widget: grid_widget
+        :param pygame_widget: pygame widget
         :param index: 当前是选中的第几个文件，用于调整窗体显示的位置
         :param f: 文件的路径
         :return: None
@@ -566,11 +690,11 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(main_widget)
         MainWindow.show()
 
-    def result_category(self, MainWindow, grid_widget, category, dir_path):
+    def result_category(self, MainWindow, pygame_widget, category, dir_path):
         """
         多次结果分析窗口设计
         :param MainWindow: 窗口
-        :param grid_widget: grid_widget
+        :param pygame_widget: pygame widget
         :param category: 多次结果类
         :param dir_path: 当前选中的文件夹的路径
         :return: None
@@ -615,7 +739,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(main_widget)
         MainWindow.show()
 
-    def result_category_average(self, MainWindow, grid_widget, category):
+    def result_category_average(self, MainWindow, pygame_widget, category):
         """
         多结果分析求平均值窗口设计
         :param category:
@@ -652,7 +776,7 @@ class Ui_MainWindow(object):
         main_widget.setLayout(layout)
         MainWindow.setCentralWidget(main_widget)
 
-    def result_category_compare(self, MainWindow, grid_widget, compare):
+    def result_category_compare(self, MainWindow, pygame_widget, compare):
         MainWindow.setGeometry(100, 100, 500, 500)
         button_image = QPushButton("对比结果生成图片")
         def on_button_image_click():
@@ -678,239 +802,6 @@ class Ui_MainWindow(object):
         main_widget = QWidget(MainWindow)
         main_widget.setLayout(layout)
         MainWindow.setCentralWidget(main_widget)
-
-    def setupUi(self, MainWindow, grid_widget):
-        self.loginWindow_new = None
-        MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1050, 850)
-        icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("./img/logo.png"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
-        MainWindow.setWindowIcon(icon)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
-        MainWindow.setSizePolicy(sizePolicy)
-        MainWindow.setMinimumSize(QtCore.QSize(1050, 850))
-        MainWindow.setMaximumSize(QtCore.QSize(1050, 850))
-        self.centralwidget = QtWidgets.QWidget(MainWindow)
-        self.centralwidget.setObjectName("centralwidget")
-
-        self.text_result = QtWidgets.QTextBrowser(self.centralwidget)
-        self.text_result.setGeometry(QtCore.QRect(40, 500, 921, 251))
-        self.text_result.setObjectName("text_result")
-
-        self.grid_widget = grid_widget
-
-        self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(40, 20, 921, 450))
-        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
-        self.layout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.setObjectName("layout")
-        MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1006, 23))
-        self.menubar.setObjectName("menubar")
-        self.menu = QtWidgets.QMenu(self.menubar)
-        self.menu.setObjectName("menu")
-        self.menu_5 = QtWidgets.QMenu(self.menubar)
-        self.menu_5.setObjectName("menu_5")
-        # 添加新的工具栏
-        self.menu_ob = QtWidgets.QMenu(self.menubar)
-        self.menu_ob.setObjectName("menu_ob")
-        self.menu_startAndEnd = QtWidgets.QMenu(self.menubar)
-        self.menu_startAndEnd.setObjectName("menu_startAndEnd")
-        self.menu_map = QtWidgets.QMenu(self.menubar)
-        self.menu_map.setObjectName("menu_map")
-        self.menu_plan = QtWidgets.QMenu(self.menubar)
-        self.menu_plan.setObjectName("menu_plan")
-        self.menu_display = QtWidgets.QMenu(self.menubar)
-        self.menu_display.setObjectName("menu_display")
-
-        MainWindow.setMenuBar(self.menubar)
-        self.statusbar = QtWidgets.QStatusBar(MainWindow)
-        self.statusbar.setObjectName("statusbar")
-        MainWindow.setStatusBar(self.statusbar)
-        self.toolBar = QtWidgets.QToolBar(MainWindow)
-        self.toolBar.setObjectName("toolBar")
-        MainWindow.addToolBar(QtCore.Qt.ToolBarArea.TopToolBarArea, self.toolBar)
-        self.toolBar.setMovable(False)  # 设置工具栏为不可移动
-        self.actionLoadTest = QtWidgets.QAction(MainWindow)
-        self.actionLoadTest.setObjectName("actionLoadTest")
-        self.actionExit = QtWidgets.QAction(MainWindow)
-        self.actionExit.setObjectName("actionExit")
-        self.actionExit.triggered.connect(self.loginOut)
-        self.actionOpen = QtWidgets.QAction(MainWindow)
-        self.actionOpen.setObjectName("actionOpen")
-        self.actionOpen.triggered.connect(grid_widget.open_map)
-
-        self.actionCreate = QtWidgets.QAction(MainWindow)
-        self.actionCreate.setObjectName("actionCreate")
-        # 点击菜单连接方法
-        self.actionCreate.triggered.connect(self.openNewWindow)
-        # 点击菜单退出方法
-        self.actionExit.triggered.connect(self.loginOut)
-        self.actionSave = QtWidgets.QAction(MainWindow)
-        self.actionSave.setObjectName("actionSave")
-        # 保存地图的方法
-        self.actionSave.triggered.connect(grid_widget.save_map)
-        self.createArithmetic = QtWidgets.QAction(MainWindow)
-        self.createArithmetic.setObjectName("createArithmetic")
-        self.createArithmetic.triggered.connect(self.openArithmeticList)
-        self.actionVersion = QtWidgets.QAction(MainWindow)
-        self.actionVersion.setObjectName("actionVersion")
-        # 版本信息弹出框链接
-        self.actionVersion.triggered.connect(self.versionInformation)
-        self.actionhelp = QtWidgets.QAction(MainWindow)
-        self.actionhelp.setObjectName("actionhelp")
-        # 帮助手册弹出框链接
-        self.actionhelp.triggered.connect(self.helpInfo)
-        self.actionmodel = QtWidgets.QAction(MainWindow)
-        self.actionmodel.setObjectName("actionmodel")
-
-        # 下载地图模板
-        self.actionArithmeticList = QtWidgets.QAction(MainWindow)
-        self.actionArithmeticList.setObjectName("actionArithmeticList")
-        self.actionArithmeticList.triggered.connect(self.openArithmeticList)
-
-        # 随机障碍物
-        self.action_random = QtWidgets.QAction(MainWindow)
-        self.action_random.setObjectName("action_random")
-        self.action_random.triggered.connect(self.open_randomOb)
-        # 参数障碍物
-        self.action_canshu = QtWidgets.QAction(MainWindow)
-        self.action_canshu.setObjectName("action_canshu")
-        self.action_canshu.triggered.connect(self.open_modifyOb)
-        # 图形障碍物
-        self.action_graph = QtWidgets.QAction(MainWindow)
-        self.action_graph.setObjectName("action_graph")
-        self.action_graph.triggered.connect(self.select_graph)
-        # 随机起始点
-        self.action_randomPoint = QtWidgets.QAction(MainWindow)
-        self.action_randomPoint.setObjectName("action_randomPoint")
-        self.action_randomPoint.triggered.connect(grid_widget.generateRandomStart)
-        # 输入起始点
-        self.action_input = QtWidgets.QAction(MainWindow)
-        self.action_input.setObjectName("action_input")
-        self.action_input.triggered.connect(self.startAndEnd)
-        # 清空地图
-        self.action_empty = QtWidgets.QAction(MainWindow)
-        self.action_empty.setObjectName("action_empty")
-        self.action_empty.triggered.connect(grid_widget.clear_map)
-        # 调整栅格大小
-        self.action_mapModify = QtWidgets.QAction(MainWindow)
-        self.action_mapModify.setObjectName("action_mapModify")
-        self.action_mapModify.triggered.connect(self.modify_map)
-        # 路径规划
-        self.action_plan = QtWidgets.QAction(MainWindow)
-        self.action_plan.setObjectName("action_plan")
-        self.action_plan.triggered.connect(self.select_method)
-        # 分析规划
-        self.action_analyse = QtWidgets.QAction(MainWindow)
-        self.action_analyse.setObjectName("action_analyse")
-        self.action_analyse.triggered.connect(self.open_start_path)
-        # 获取图形
-        self.action_get = QtWidgets.QAction(MainWindow)
-        self.action_get.setObjectName("action_get")
-        self.action_get.triggered.connect(self.grid_widget.get_obs_vertices)
-        # 栅格化地图
-        self.action_rasterization = QtWidgets.QAction(MainWindow)
-        self.action_rasterization.setObjectName("action_rasterization")
-        self.action_rasterization.triggered.connect(self.grid_widget.rasterize_map)
-        self.menu.addAction(self.actionCreate)
-        self.menu.addAction(self.actionOpen)
-        self.menu.addAction(self.actionSave)
-        self.menu.addAction(self.createArithmetic)
-        self.menu.addAction(self.actionmodel)
-        self.menu.addAction(self.actionArithmeticList)
-        self.menu_5.addAction(self.actionExit)
-        self.menu_5.addAction(self.actionVersion)
-        self.menu_5.addAction(self.actionhelp)
-        self.menu_ob.addAction(self.action_random)
-        self.menu_ob.addAction(self.action_canshu)
-        self.menu_ob.addAction(self.action_graph)
-        self.menu_startAndEnd.addAction(self.action_randomPoint)
-        self.menu_startAndEnd.addAction(self.action_input)
-        self.menu_map.addAction(self.action_empty)
-        self.menu_map.addAction(self.action_mapModify)
-        self.menu_plan.addAction(self.action_plan)
-        self.menu_plan.addAction(self.action_analyse)
-        self.menu_plan.addAction(self.action_get)
-        self.menu_plan.addAction(self.action_rasterization)
-        # 添加工具栏中选项卡
-        self.select_action1 = self.menu_display.addAction("路径规划")
-        self.select_action1.setCheckable(True)
-        self.select_action1.triggered.connect(lambda:self.add_tool(0))
-
-        self.select_action2 = self.menu_display.addAction("分析规划")
-        self.select_action2.setCheckable(True)
-        self.select_action2.triggered.connect(lambda: self.add_tool(1))
-
-        self.select_action3 = self.menu_display.addAction("获取图形")
-        self.select_action3.setCheckable(True)
-        self.select_action3.triggered.connect(lambda: self.add_tool(2))
-
-        self.select_action4 = self.menu_display.addAction("地图栅格化")
-        self.select_action4.setCheckable(True)
-        self.select_action4.triggered.connect(lambda: self.add_tool(3))
-
-        self.select_action5 = self.menu_display.addAction("清空地图")
-        self.select_action5.setCheckable(True)
-        self.select_action5.triggered.connect(lambda: self.add_tool(4))
-
-        self.select_action6 = self.menu_display.addAction("随机起始点")
-        self.select_action6.setCheckable(True)
-        self.select_action6.triggered.connect(lambda: self.add_tool(5))
-
-        self.select_action7 = self.menu_display.addAction("输入起始点")
-        self.select_action7.setCheckable(True)
-        self.select_action7.triggered.connect(lambda: self.add_tool(6))
-
-        self.select_action8 = self.menu_display.addAction("图形障碍物")
-        self.select_action8.setCheckable(True)
-        self.select_action8.triggered.connect(lambda: self.add_tool(7))
-
-        self.select_action9 = self.menu_display.addAction("参数障碍物")
-        self.select_action9.setCheckable(True)
-        self.select_action9.triggered.connect(lambda: self.add_tool(8))
-
-        self.select_action10 = self.menu_display.addAction("随机障碍物")
-        self.select_action10.setCheckable(True)
-        self.select_action10.triggered.connect(lambda: self.add_tool(9))
-
-        self.select_action11 = self.menu_display.addAction("地图栅格大小调整")
-        self.select_action11.setCheckable(True)
-        self.select_action11.triggered.connect(lambda: self.add_tool(10))
-
-        self.menubar.addAction(self.menu.menuAction())
-        self.menubar.addAction(self.menu_ob.menuAction())
-        self.menubar.addAction(self.menu_startAndEnd.menuAction())
-        self.menubar.addAction(self.menu_map.menuAction())
-        self.menubar.addAction(self.menu_plan.menuAction())
-        self.menubar.addAction(self.menu_display.menuAction())
-        self.menubar.addAction(self.menu_5.menuAction())
-
-        self.toolBar.addAction(self.actionCreate)
-        self.toolBar.addAction(self.actionSave)
-        self.toolBar.addAction(self.actionOpen)
-        self.toolBar.addAction(self.actionmodel)
-        self.toolBar.addAction(self.actionExit)
-
-        self.toolBar.addAction(self.actionCreate)
-        self.toolBar.addAction(self.actionSave)
-        self.toolBar.addAction(self.actionOpen)
-        self.toolBar.addAction(self.actionmodel)
-        self.toolBar.addAction(self.actionhelp)
-        self.toolBar.addAction(self.actionArithmeticList)
-        self.toolBar.addAction(self.actionExit)
-        # 侧边栏
-        self.sideToolBar = QtWidgets.QToolBar(MainWindow)
-        self.sideToolBar.setObjectName("sideToolBar")
-        # self.sideToolBar.setMovable(False)  # 设置工具栏为不可移动
-        MainWindow.addToolBar(QtCore.Qt.ToolBarArea.LeftToolBarArea, self.sideToolBar)
-        self.retranslateUi(MainWindow)
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     # 常用工具栏动态添加
     def add_tool(self,index):
@@ -973,14 +864,14 @@ class Ui_MainWindow(object):
     # 图形障碍物窗口
     def select_graph(self):
         new_window = QtWidgets.QMainWindow()
-        ui.graph_ob(new_window, self.grid_widget)
+        mainWindow.graph_ob(new_window, self.pygame_widget)
         new_window.setWindowTitle('图形障碍物')
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
     # 随机障碍物窗口
     def open_randomOb(self):
         new_window = QtWidgets.QMainWindow()
-        ui.random_ob(new_window, self.grid_widget)
+        mainWindow.random_ob(new_window, self.pygame_widget)
         new_window.setWindowTitle('随机障碍物')
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
@@ -988,28 +879,27 @@ class Ui_MainWindow(object):
     # 随机障碍物窗口
     def startAndEnd(self):
         new_window = QtWidgets.QMainWindow()
-        ui.input_startAndEnd(new_window, self.grid_widget)
+        mainWindow.input_startAndEnd(new_window, self.pygame_widget)
         new_window.setWindowTitle('输入起始点')
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
     # 随机障碍物窗口
     def modify_map(self):
         new_window = QtWidgets.QMainWindow()
-        ui.map(new_window, self.grid_widget)
+        mainWindow.map(new_window, self.pygame_widget)
         new_window.setWindowTitle('随机障碍物')
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
     # 路径规划选择算法窗口
     def select_method(self):
-        new_window = QtWidgets.QMainWindow()
-        ui.select_arithmetic(new_window, self.grid_widget)
-        new_window.setWindowTitle('仿真算法')
-        new_window.show()
-        self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+        select_algorithm_window = SelectAlgorithmWindow(self.pygame_widget)
+        # mainWindow.select_arithmetic(select_algorithm_window, self.pygame_widget)
+        select_algorithm_window.show()
+        self.windows.append(select_algorithm_window)  # 将新创建的窗口实例添加到列表中
     # 打开参数障碍物窗口
     def open_modifyOb(self):
         new_window = QtWidgets.QMainWindow()
-        ui.modify_obstacles(new_window, self.grid_widget)
+        mainWindow.modify_obstacles(new_window, self.pygame_widget)
         new_window.setWindowTitle('参数障碍物')
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
@@ -1017,7 +907,7 @@ class Ui_MainWindow(object):
         # 打开参数障碍物窗口
     def open_start_path(self):
         new_window = QtWidgets.QMainWindow()
-        ui.start_path(new_window, self.grid_widget)
+        mainWindow.start_path(new_window, self.pygame_widget)
         new_window.setWindowTitle('规划算法')
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
@@ -1030,7 +920,7 @@ class Ui_MainWindow(object):
         :return:None
         """
         new_window = QtWidgets.QMainWindow()
-        ui.result_single(new_window, self.grid_widget, index, f)
+        mainWindow.result_single(new_window, self.pygame_widget, index, f)
         new_window.setWindowTitle('单路径分析')
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
@@ -1041,7 +931,7 @@ class Ui_MainWindow(object):
         :return:
         """
         new_window = QtWidgets.QMainWindow()
-        ui.result_category(new_window, self.grid_widget, category, dir_path)
+        mainWindow.result_category(new_window, self.pygame_widget, category, dir_path)
         new_window.setWindowTitle('多路径分析')
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
@@ -1087,7 +977,7 @@ class Ui_MainWindow(object):
         :return: None
         """
         new_window = QtWidgets.QMainWindow()
-        ui.result_category_average(new_window, self.grid_widget, category)
+        mainWindow.result_category_average(new_window, self.pygame_widget, category)
         new_window.setWindowTitle('多路径分析')
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
@@ -1098,7 +988,7 @@ class Ui_MainWindow(object):
         :return: None
         """
         new_window = QtWidgets.QMainWindow()
-        ui.result_category_compare(new_window, self.grid_widget, compare)
+        mainWindow.result_category_compare(new_window, self.pygame_widget, compare)
         new_window.setWindowTitle('多路径分析')
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
@@ -1112,17 +1002,10 @@ class Ui_MainWindow(object):
 
     # 创建新窗口方法
     def openNewWindow(self):
-        new_window = QtWidgets.QMainWindow()
-        ui = Ui_MainWindow()
-        # grid_widget = GridWidget(ui)
-        pw = PygameWidget(ui)
-        ui.setupUi(new_window, pw)
-
-        new_window.setWindowTitle('基于Pygame的路径规划算法仿真平台')
-        # 添加地图
-        ui.layout.addWidget(pw)
-        new_window.show()
-        self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+        sub_window = SubWindow()
+        # sub_window.setWindowTitle('基于Pygame的路径规划算法仿真平台')
+        sub_window.show()
+        self.windows.append(sub_window)  # 将新创建的窗口实例添加到列表中
 
     # 退出登录
     def loginOut(self):
@@ -1194,31 +1077,14 @@ class Ui_MainWindow(object):
         self.action_analyse.setText(_translate("MainWindow", "分析规划"))
         self.action_get.setText(_translate("MainWindow", "获取图形"))
         self.action_rasterization.setText(_translate("MainWindow", "栅格化"))
-    # 路径规划
-    def startPath(self):
-        self.grid_widget.plan_surface.fill((255, 255, 255))
-        if not self.grid_widget.obstacles or not self.grid_widget.start_point or not self.grid_widget.end_point:
-            self.printf("未设置障碍物或起始点或终点")
-        # 根据不同的算法
-        else:
-            if self.combo_arithmetic.currentText() == "Astar":
-                self.printf("启动A星算法！！！")
-                self.grid_widget.startAstar()
-            elif self.combo_arithmetic.currentText() == "RRT":
-                self.printf("启动RRT算法！！！")
-                self.grid_widget.start_rrt()
-            elif self.combo_arithmetic.currentText() == "APF":
-                self.printf("启动APF算法！！！")
-                self.grid_widget.startApf()
-            elif self.combo_arithmetic.currentText() == "APFRRT":
-                self.printf("启动APF-RRT算法！！！")
-                self.grid_widget.startApfRrt()
-            elif self.combo_arithmetic.currentText() == "PRM":
-                self.printf("启动PRM算法！！！")
-                self.grid_widget.startPRm()
-            elif self.combo_arithmetic.currentText() == "IPRM":
-                self.printf("启动IPRM算法！！！")
-                self.grid_widget.startIPRm()
+    
+    def start_plan(self, algorithm_instance):
+        self.pygame_widget.result = None
+        self.pygame_widget.result,time = algorithm_instance(self).plan(self.pygame_widget.plan_surface)
+        track = []
+        for point in self.pygame_widget.result:
+            track.append((point.x, point.y))
+        return track, time
 
     def ori_end_input(self):  # 输入起始点终点函数
         coordinate = self.text_input.text()
@@ -1231,7 +1097,7 @@ class Ui_MainWindow(object):
             keyy = int(match.group(2))  # 提取纵坐标
             print("起点横坐标:", keyx)
             print("起点纵坐标:", keyy)
-            pw.painting_ori(keyx, keyy)  # 目前执行到这里程序就结束了，应该是调用有问题
+            self.pygame_widget.painting_ori(keyx, keyy)  # 目前执行到这里程序就结束了，应该是调用有问题
         else:
             print("坐标格式不正确")
         coordinate_2 = self.text_input_2.text()
@@ -1244,7 +1110,7 @@ class Ui_MainWindow(object):
             keyy_2 = int(match_2.group(2))  # 提取纵坐标
             print("终点横坐标:", keyx_2)
             print("终点纵坐标:", keyy_2)
-            pw.painting_end(keyx_2, keyy_2)
+            self.pygame_widget.painting_end(keyx_2, keyy_2)
         else:
             print("坐标格式不正确")
 
@@ -1252,17 +1118,183 @@ class Ui_MainWindow(object):
         self.algorithm_list = AlgorithmList()
         self.algorithm_list.show()
 
+# 子窗口类
+class SubWindow(MainWindow):
+    def __init__(self):
+        super().__init__()
+
+# 选择算法窗口类
+class SelectAlgorithmWindow(QMainWindow):
+        def __init__(self, pygame_widget):
+            super().__init__()
+            algorithm_folder = 'algorithms'
+
+            self.algorithm_modules = list_algorithm_modules(algorithm_folder)
+            self.algorithm_classes = list_algorithm_classes(self.algorithm_modules)
+            self.pygame_widget = pygame_widget
+            self.initUI()
+
+        def initUI(self):
+            self.setWindowTitle('算法选择')
+            self.setGeometry(100, 100, 400, 300)
+
+            self.centralWidget = QWidget(self)
+            self.setCentralWidget(self.centralWidget)
+
+            self.mainLayout = QVBoxLayout()
+            self.centralWidget.setLayout(self.mainLayout)
+
+            # 添加算法选择的下拉列表
+            self.algorithmComboBox = QComboBox()
+            self.algorithmComboBox.addItems(self.algorithm_modules)
+            self.mainLayout.addWidget(self.algorithmComboBox)
+
+            # 添加其他组件
+            # self.addParameterInput("Parameter 1", 0, 10)
+            # self.addParameterInput("Parameter 2", 1, 100)
+            # 添加更多参数...
+
+            
+            # 保存结果部分
+            self.radioLayout1 = QHBoxLayout()
+            label_result = QLabel("是否保存结果:")
+            self.radioLayout1.addWidget(label_result)
+            # label_result.setGeometry(30, 60, 80, 30)
+            self.radio_button_result = QButtonGroup()
+            self.radio_button_result.setExclusive(True)
+
+            self.add_radio_buttons()
+            # self.radioLayout.setSpacing(100)
+            # self.radioLayout.setAlignment(QtCore.Qt.AlignHCenter)
+
+            self.mainLayout.addLayout(self.radioLayout1)
+            # 设置结果文件名称的部分
+            self.label_path = QLabel("")
+            self.mainLayout.addWidget(self.label_path)
+            # label_path.setGeometry(30, 120, 200, 30)
+            self.line_edit_result = QLineEdit("")
+            self.line_edit_result.setPlaceholderText("请输入文件名")
+            self.mainLayout.addWidget(self.line_edit_result)
+            # line_edit_result.setGeometry(90, 150, 120, 30)
+            self.line_edit_result.hide()  # 默认是不保存结果,所以先隐藏
+
+            self.radio_button_result.buttonClicked.connect(self.on_result_click)
+            # 运行次数部分
+            self.radioLayout2 = QHBoxLayout()
+            self.mainLayout.addLayout(self.radioLayout2)
+            label_run = QLabel("是否运行多次:")
+            self.radioLayout2.addWidget(label_run)
+            # label_run.setGeometry(30, 90, 80, 30)
+            self.radio_button_run = QButtonGroup()
+            self.radio_button_run.setExclusive(True)
+            self.radio_button_run_true = QRadioButton("是")
+            self.radioLayout2.addWidget(self.radio_button_run_true)
+            # radio_button_run_true.setGeometry(110, 90, 80, 30)
+            self.radio_button_run.addButton(self.radio_button_run_true)
+            self.radio_button_run_false = QRadioButton("否")
+            self.radioLayout2.addWidget(self.radio_button_run_false)
+            self.radioLayout2.addStretch()
+            # radio_button_run_false.setGeometry(170, 90, 80, 30)
+            self.radio_button_run_false.setChecked(True)  # 默认是只运行一次
+            self.radio_button_run.addButton(self.radio_button_run_false)
+            
+            # 选择运行次数部分
+            self.spin_box = QSpinBox()  # 数字选择框
+            self.mainLayout.addWidget(self.spin_box)
+            # spin_box.setGeometry(30, 180, 50, 30)
+            self.spin_box.setMinimum(0)  # 设置最小值
+            self.spin_box.setMaximum(100)  # 设置最大值
+            self.spin_box.setValue(1)  # 设置默认值
+            self.spin_box.hide()  # 默认是运行一次,所以先隐藏
+            
+            self.radio_button_run.buttonClicked.connect(self.on_run_click)
+            # 创建生成障碍物按钮
+            self.button_generate_obstacle = QPushButton("开始规划")
+            # self.button_generate_obstacle.setGeometry(90, 180, 120, 30)  # 设置按钮位置和大小
+
+            self.label_notice = QLabel("")
+            self.mainLayout.addWidget(self.label_notice)
+            # label_notice.setGeometry(80, 210, 150, 30)  # 设置标签位置和大小
+            
+
+            self.addButton()
+
+        def on_result_click(self, button):
+            if button == self.radio_button_result_true:
+                select_folder = QFileDialog.getExistingDirectory(self, "选择文件夹", "")
+                self.label_path.setText(select_folder)
+                self.line_edit_result.show()
+            else:
+                self.line_edit_result.hide()
+
+        def on_run_click(self, button):
+            if button == self.radio_button_run_true:
+                self.spin_box.show()
+            else:
+                self.spin_box.hide()
+
+        def add_radio_buttons(self):
+            
+            self.radio_button_result_true = QRadioButton("是")
+            self.radioLayout1.addWidget(self.radio_button_result_true)
+            # radio_button_result_true.setGeometry(110, 60, 80, 30)
+            self.radio_button_result.addButton(self.radio_button_result_true)
+
+            self.radio_button_result_false = QRadioButton("否")
+            self.radioLayout1.addWidget(self.radio_button_result_false)
+            # radio_button_result_false.setGeometry(170, 60, 80, 30)
+            self.radio_button_result_false.setChecked(True)  # 默认是不保存结果
+            self.radio_button_result.addButton(self.radio_button_result_false)
+
+            self.radioLayout1.addStretch()
+
+
+        def addButton(self):
+            button = QPushButton('运行')
+            button.clicked.connect(self.runAlgorithm)
+            self.mainLayout.addWidget(button)
+
+        def start_plan(self, algorithm_instance):
+            self.pygame_widget.result = None
+            self.pygame_widget.result, self.pygame_widget.time = algorithm_instance.plan(self.pygame_widget.plan_surface)
+            track = []
+            for point in self.pygame_widget.result:
+                track.append((point.x, point.y))
+            return track, self.pygame_widget.time
+
+        def runAlgorithm(self):
+            # 检测路径是否合法
+            if self.radio_button_result_true.isChecked() and self.label_path.text() == "":
+                self.label_notice.setText("请选择文件!")
+                self.radio_button_result_false.setChecked(True)
+                return
+            # 获取循环次数
+            if self.radio_button_run_true.isChecked():
+                spin_box_value = self.spin_box.value()
+            else:
+                spin_box_value = 1
+            for i in range(spin_box_value):
+                track = []  # 算法执行所得的路径
+                time = None  # 算法花费的时间
+
+                selected_algorithm_index = self.algorithmComboBox.currentIndex()
+                selected_algorithm_class = self.algorithm_classes[selected_algorithm_index]
+                algorithm_instance = selected_algorithm_class(self.pygame_widget)
+                track, time = self.start_plan(algorithm_instance)
+
+                self.label_notice.setText("正在规划路径！")
+                # 保存结果部分
+                if self.radio_button_result_true.isChecked():
+                    filepath = self.label_path.text()+"/"+self.line_edit_result.text()+str(i)+".txt"
+                    self.pygame_widget.save_result(time1=time, track=track, file_path=filepath)
+            
+        
+
 
 if __name__ == '__main__':
     import sys
 
     app = QtWidgets.QApplication(sys.argv)
-    ui = Ui_MainWindow()
-    mainWindow = QtWidgets.QMainWindow()
-    # grid_widget = GridWidget(ui)
-    pw = PygameWidget(ui)
-    ui.setupUi(mainWindow, pw)
-    # 添加地图
-    ui.layout.addWidget(pw)
+    mainWindow = MainWindow()
     mainWindow.show()
     sys.exit(app.exec())

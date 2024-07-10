@@ -7,10 +7,10 @@ from shapely.geometry import Point, Polygon
 import pygame
 from shapely.ops import nearest_points
 
-from arithmetic.APF.Node import point
+from .Node import point
 
 
-class apf:
+class Main:
     def __init__(self, mapdata):
         self.start = point(mapdata.start_point[0], mapdata.start_point[1])  # 储存此次搜索的开始点
         self.end = point(mapdata.end_point[0], mapdata.end_point[1])  # 储存此次搜索的目的点
@@ -145,7 +145,7 @@ class apf:
             if self.distance(next_point,self.end)<10:
                 print ("成功规划！！")
                 self.result.append((self.end.x,self.end.y))
-                break;
+                break
             next_point = point(next_x, next_y)
             if next_point:
                 pygame.draw.circle(plan_surface, (0, 100, 255), (next_point.x, next_point.y), 2)
@@ -157,8 +157,8 @@ class apf:
 
             if self.count > 10000:  # 避免无限循环
                 print("没有可行路径或陷入局部极小值点！！！！！！！")
-                break;
-        end_time = time.time();
+                break
+        end_time = time.time()
         print("花费时间为")
         print(end_time - start_time)
         return self.result

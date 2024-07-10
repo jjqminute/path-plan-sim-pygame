@@ -7,10 +7,10 @@ from scipy.spatial import KDTree
 import copy
 from .Node import point
 import heapq
-from .prm import prm
+from .main_algorithm import Main
 
 
-class iprm(prm):
+class iprm(Main):
     def __init__(self, mapdata):
         super().__init__(mapdata)
         D_MIN = 10

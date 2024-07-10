@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QApplication
 from .Node import point
 
 
-class Rrt:
+class Main:
     def __init__(self, mapdata):
         self.start = point(mapdata.start_point[0], mapdata.start_point[1])
         self.end = point(mapdata.end_point[0], mapdata.end_point[1])

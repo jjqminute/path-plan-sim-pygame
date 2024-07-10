@@ -1,7 +1,7 @@
 # 姓名：jujianqiang
 # 2023/12/8 11:41
-from arithmetic.Astar.astar import astar
-from arithmetic.Astar.Map import Map
+from .main_algorithm import Main
+from .Map import Map
 
 mymap = [
     [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -15,6 +15,6 @@ mymap = [
     [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 ]
 map = Map(mymap, 0, 1, 5, 5)
-result = astar(map)
+result = Main(map)
 result.reverse()
 print(result)

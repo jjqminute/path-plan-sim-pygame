@@ -11,7 +11,7 @@ import heapq
 
 
 
-class prm:
+class Main:
     def __init__(self, mapdata):
         self.start = point(mapdata.start_point[0], mapdata.start_point[1])
         self.end = point(mapdata.end_point[0], mapdata.end_point[1])

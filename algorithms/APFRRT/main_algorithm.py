@@ -8,10 +8,10 @@ from shapely.geometry import Point, Polygon
 import pygame
 from shapely.ops import nearest_points
 
-from arithmetic.APFRRT.Node import point
+from .Node import point
 
 
-class APFRRT():
+class Main():
     def __init__(self, mapdata):
         self.start = point(mapdata.start_point[0], mapdata.start_point[1])  # 储存此次搜索的开始点
         self.end = point(mapdata.end_point[0], mapdata.end_point[1])  # 储存此次搜索的目的点

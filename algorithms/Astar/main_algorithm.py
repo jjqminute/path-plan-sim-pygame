@@ -10,7 +10,7 @@ from shapely.geometry import Point, Polygon, LineString
 
 
 
-class astar:  # 核心部分，寻路类
+class Main:  # 核心部分，寻路类
     def __init__(self, mapdata):
         self.start = point(mapdata.start_point[0], mapdata.start_point[1])  # 储存此次搜索的开始点
         self.end = point(mapdata.end_point[0], mapdata.end_point[1])  # 储存此次搜索的目的点
