@@ -42,6 +42,10 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.loginWindow_new = None
+        self.pygame_widget = PygameWidget(self)
+        self.init_ui()
+
+    def init_ui(self):
         self.setObjectName("MainWindow")
         self.resize(1050, 850)
         icon = QtGui.QIcon()
@@ -60,8 +64,6 @@ class MainWindow(QMainWindow):
         self.text_result = QtWidgets.QTextBrowser(self.centralwidget)
         self.text_result.setGeometry(QtCore.QRect(40, 500, 921, 251))
         self.text_result.setObjectName("text_result")
-
-        self.pygame_widget = PygameWidget(self)
 
         self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
         self.verticalLayoutWidget.setGeometry(QtCore.QRect(40, 20, 921, 450))
@@ -1132,9 +1134,9 @@ class SelectAlgorithmWindow(QMainWindow):
             self.algorithm_modules = list_algorithm_modules(algorithm_folder)
             self.algorithm_classes = list_algorithm_classes(self.algorithm_modules)
             self.pygame_widget = pygame_widget
-            self.initUI()
+            self.init_ui()
 
-        def initUI(self):
+        def init_ui(self):
             self.setWindowTitle('算法选择')
             self.setGeometry(100, 100, 400, 300)
 
@@ -1217,7 +1219,7 @@ class SelectAlgorithmWindow(QMainWindow):
             # label_notice.setGeometry(80, 210, 150, 30)  # 设置标签位置和大小
             
 
-            self.addButton()
+            self.add_button()
 
         def on_result_click(self, button):
             if button == self.radio_button_result_true:
@@ -1249,9 +1251,9 @@ class SelectAlgorithmWindow(QMainWindow):
             self.radioLayout1.addStretch()
 
 
-        def addButton(self):
+        def add_button(self):
             button = QPushButton('运行')
-            button.clicked.connect(self.runAlgorithm)
+            button.clicked.connect(self.run_algorithm)
             self.mainLayout.addWidget(button)
 
         def start_plan(self, algorithm_instance):
@@ -1262,7 +1264,7 @@ class SelectAlgorithmWindow(QMainWindow):
                 track.append((point.x, point.y))
             return track, self.pygame_widget.time
 
-        def runAlgorithm(self):
+        def run_algorithm(self):
             # 检测路径是否合法
             if self.radio_button_result_true.isChecked() and self.label_path.text() == "":
                 self.label_notice.setText("请选择文件!")
