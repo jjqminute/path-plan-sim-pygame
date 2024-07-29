@@ -15,33 +15,13 @@ from algorithmlist import AlgorithmList
 from mappygame import PygameWidget
 from result import load_demo, Category_Demo, Category_Compare
 
-from selectalgorithmwindow import SelectAlgorithmWindow # 选择算法窗口类
+from selectalgorithmwindow import SelectAlgorithmWindow  # 选择算法窗口类
 from analyticalplanningwindow import AnalyticalPlanningWindow
 
-def list_algorithm_modules(folder_path):
-        algorithm_modules = []
-        files = os.listdir(folder_path)
-        for file in files:
-            module_path = os.path.join(folder_path, file)
-            if os.path.isdir(module_path) and '__init__.py' in os.listdir(module_path):
-                algorithm_name = os.path.basename(module_path)
-                algorithm_modules.append(algorithm_name)
-        return algorithm_modules
-
-def load_main_algorithm(module_path):
-    module_name = os.path.basename(module_path)
-    module = importlib.import_module(f'algorithms.{module_name}.main_algorithm')
-    return module.Main
-
-def list_algorithm_classes(algorithm_modules):
-    algorithm_classes = []
-    for module in algorithm_modules:
-        algorithm_class = load_main_algorithm(module)
-        algorithm_classes.append(algorithm_class)
-    return algorithm_classes
 
 class MainWindow(QMainWindow):
     windows = []  # 存储所有创建的窗口实例
+
     def __init__(self):
         super().__init__()
         self.loginWindow_new = None
@@ -207,7 +187,7 @@ class MainWindow(QMainWindow):
         # 添加工具栏中选项卡
         self.select_action1 = self.menu_display.addAction("路径规划")
         self.select_action1.setCheckable(True)
-        self.select_action1.triggered.connect(lambda:self.add_tool(0))
+        self.select_action1.triggered.connect(lambda: self.add_tool(0))
 
         self.select_action2 = self.menu_display.addAction("分析规划")
         self.select_action2.setCheckable(True)
@@ -284,7 +264,7 @@ class MainWindow(QMainWindow):
     def modify_obstacles(self, MainWindow, pygame_widget):
         self.loginWindow_new = None
         MainWindow.setObjectName("MainWindow")
-        MainWindow.setFixedSize(400, 300) # 窗口大小锁定
+        MainWindow.setFixedSize(400, 300)  # 窗口大小锁定
         # 创建障碍物数量标签
         self.label_sum = QLabel("障碍物数量:", MainWindow)
         self.label_sum.setGeometry(60, 50, 80, 30)  # 设置标签位置和大小
@@ -431,11 +411,13 @@ class MainWindow(QMainWindow):
             files, _ = QFileDialog.getOpenFileNames(MainWindow, '打开结果文件', '', '结果文件 (*.txt)')
             for index, f in enumerate(files):  # 循环选中的所有文件
                 self.open_result_single(index, f)
+
         button_single.clicked.connect(on_single_click)
 
         # 多路径比较分析
         button_category = QPushButton("多次路径比较分析", MainWindow)
         button_category.setGeometry(10, 40, 150, 30)
+
         def on_category_click():
             dialog = QFileDialog()
             dialog.setWindowTitle("选择要进行多次结果分析的文件夹")
@@ -447,6 +429,7 @@ class MainWindow(QMainWindow):
                     self.open_result_category(category, dialog.selectedFiles()[0])
                 except ValueError as e:
                     label_notice.setText(str(e))
+
         button_category.clicked.connect(on_category_click)
         # 创建生成障碍物按钮
         self.button_start = QPushButton("开始规划", MainWindow)
@@ -455,14 +438,15 @@ class MainWindow(QMainWindow):
         # 不同算法性能对比(多个多次路径比较分析)
         button_category_compare = QPushButton("不同算法性能比较", MainWindow)
         button_category_compare.setGeometry(10, 70, 150, 30)
+
         def on_category_compare_click():
             files, _ = QFileDialog.getOpenFileNames(MainWindow, '选择要进行性能对比的文件', '', '计算结果文件 (*.txt)')
             if files:
                 compare = Category_Compare()
                 compare.read_category(files)
                 self.open_result_category_compare(compare)
-        button_category_compare.clicked.connect(on_category_compare_click)
 
+        button_category_compare.clicked.connect(on_category_compare_click)
 
     # 随机障碍物提示输入障碍物数量窗口
     def random_ob(self, MainWindow, pygame_widget):
@@ -489,12 +473,9 @@ class MainWindow(QMainWindow):
                 return
             pygame_widget.random_graph_new(int(obstacle_quantity))
             label_notice.setText("障碍物生成成功！")
+
         # 连接按钮的点击信号
         self.button_generate_obstacle.clicked.connect(on_button_click)
-
-
-    
-    
 
     # 地图栅格大小调整
     def map(self, MainWindow, pygame_widget):
@@ -528,8 +509,10 @@ class MainWindow(QMainWindow):
                 label_notice.setText("请输入正确的整型栅格大小！")
                 return
             label_notice.setText("栅格大小修改成功！")
+
         def on_button_default():
             print("默认地图")
+
         # 连接按钮的点击信号
         self.button_modify.clicked.connect(on_button_click)
 
@@ -591,6 +574,7 @@ class MainWindow(QMainWindow):
             else:
                 print("坐标格式不正确")
             label_notice.setText("输入起始点生成成功！")
+
         # 连接按钮的点击信号
         self.button_modify.clicked.connect(on_button_click)
 
@@ -620,8 +604,9 @@ class MainWindow(QMainWindow):
         # 按钮点击事件处理函数
         def on_button_click():
             selected_index = self.combo_box.currentIndex()
-            pygame_widget.paint_random_one(selected_index+1)
+            pygame_widget.paint_random_one(selected_index + 1)
             label_notice.setText("障碍物生成成功！")
+
         # 连接按钮的点击信号到处理函数
         self.button_modify.clicked.connect(on_button_click)
 
@@ -639,6 +624,7 @@ class MainWindow(QMainWindow):
         fig = r.draw_track()  # 路径图片
         canvas = FigureCanvas(fig)  # 用于展示
         button_save_fig = QPushButton("保存图片")
+
         def on_button_save_fig_click():
             dialog = QFileDialog()
             dialog.setAcceptMode(QFileDialog.AcceptSave)
@@ -651,16 +637,19 @@ class MainWindow(QMainWindow):
             # 打开文件对话框，并返回保存的文件路径
             file_path, _ = dialog.getSaveFileName(MainWindow, '保存计算结果', '', '路径图片 (*.png)')
             fig.savefig(file_path)
+
         button_save_fig.clicked.connect(on_button_save_fig_click)
         label_time = QLabel("运行时间是：" + str(r.time), MainWindow)
         label_smoothness = QLabel("路径平滑度是：" + str(r.smoothness), MainWindow)
         label_path_length = QLabel("路径长度是：" + str(r.pathlen), MainWindow)
         button_smoothness = QPushButton("展示曲率")
+
         def on_button_smoothness_click():
             new_window = QtWidgets.QMainWindow()
             fig_curvature = r.draw_curvature()
             curvature = FigureCanvas(fig_curvature)
             button_save_curvature = QPushButton("保存图片")
+
             def on_button_save_curvature_click():
                 dialog = QFileDialog()
                 dialog.setAcceptMode(QFileDialog.AcceptSave)
@@ -673,6 +662,7 @@ class MainWindow(QMainWindow):
                 # 打开文件对话框，并返回保存的文件路径
                 file_path, _ = dialog.getSaveFileName(MainWindow, '保存曲率', '', '曲率图片 (*.png)')
                 fig_curvature.savefig(file_path)
+
             button_save_curvature.clicked.connect(on_button_save_curvature_click)
             layout_curvature = QVBoxLayout(new_window)
             layout_curvature.addWidget(curvature)
@@ -683,6 +673,7 @@ class MainWindow(QMainWindow):
             new_window.setCentralWidget(curvature_widget)
             new_window.show()
             self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+
         button_smoothness.clicked.connect(on_button_smoothness_click)
         layout = QVBoxLayout()
         layout.addWidget(canvas)
@@ -706,7 +697,7 @@ class MainWindow(QMainWindow):
         :return: None
         """
         MainWindow.setGeometry(100, 100, 500, 500)
-        label_notice = QLabel("当前选中的文件夹是:"+dir_path)
+        label_notice = QLabel("当前选中的文件夹是:" + dir_path)
         button_notice = QPushButton("重新选择")
 
         def on_button_notice_click():  # 重新选择要分析的文件夹
@@ -718,9 +709,10 @@ class MainWindow(QMainWindow):
                     nonlocal category  # nonlocal关键字代表想要修改的变量是外部作用域中的变量,而不是一个新的局部变量
                     category = Category_Demo()  # 创建多结果类
                     category.read_file(dialog.selectedFiles()[0])  # 获取选择的文件夹的路径
-                    label_notice.setText("当前选中的文件夹是:"+dialog.selectedFiles()[0])
+                    label_notice.setText("当前选中的文件夹是:" + dialog.selectedFiles()[0])
                 except ValueError as e:
                     label_notice.setText(str(e))
+
         button_notice.clicked.connect(on_button_notice_click)
         layout_notice = QHBoxLayout()
         layout_notice.addWidget(label_notice)
@@ -731,10 +723,13 @@ class MainWindow(QMainWindow):
 
         def on_button_path_compare_click():
             self.open_result_track_compare(category)
+
         button_path_compare.clicked.connect(on_button_path_compare_click)
         button_average = QPushButton("求平均值")
+
         def on_button_average():
             self.open_result_average(category)
+
         button_average.clicked.connect(on_button_average)
         layout = QVBoxLayout()
         layout.addWidget(sub_widget)
@@ -752,9 +747,9 @@ class MainWindow(QMainWindow):
         :return:
         """
         MainWindow.setGeometry(100, 100, 500, 500)
-        label_smooth = QLabel("平均平滑度是："+str(category.ave_smooth))
-        label_time = QLabel("平均时间是："+str(category.ave_time))
-        label_path_length = QLabel("平均路径长度是："+str(category.ave_path_length))
+        label_smooth = QLabel("平均平滑度是：" + str(category.ave_smooth))
+        label_time = QLabel("平均时间是：" + str(category.ave_time))
+        label_path_length = QLabel("平均路径长度是：" + str(category.ave_path_length))
         textbox_name = QLineEdit("")
         textbox_name.setPlaceholderText("请输入算法名称")
         button_save = QPushButton("保存结果")
@@ -771,6 +766,7 @@ class MainWindow(QMainWindow):
             # 打开文件对话框，并返回保存的文件路径
             file_path, _ = dialog.getSaveFileName(MainWindow, '保存计算结果', '', '计算结果文件 (*.txt)')
             category.save_file(file_path, textbox_name.text())
+
         button_save.clicked.connect(on_button_save_click)
         layout = QVBoxLayout()
         layout.addWidget(label_time)
@@ -785,6 +781,7 @@ class MainWindow(QMainWindow):
     def result_category_compare(self, MainWindow, pygame_widget, compare):
         MainWindow.setGeometry(100, 100, 500, 500)
         button_image = QPushButton("对比结果生成图片")
+
         def on_button_image_click():
             dialog = QFileDialog()
             dialog.setAcceptMode(QFileDialog.AcceptSave)
@@ -792,8 +789,10 @@ class MainWindow(QMainWindow):
             dialog.setDefaultSuffix('png')
             file_path, _ = dialog.getSaveFileName(MainWindow, '保存表格', '', '(*.png)')
             compare.save_image(file_path)
+
         button_image.clicked.connect(on_button_image_click)
         button_csv = QPushButton("对比结果生成csv")
+
         def on_button_csv_clink():
             dialog = QFileDialog()
             dialog.setAcceptMode(QFileDialog.AcceptSave)
@@ -801,6 +800,7 @@ class MainWindow(QMainWindow):
             dialog.setDefaultSuffix('csv')
             file_path, _ = dialog.getSaveFileName(MainWindow, '保存表格', '', '(*.csv)')
             compare.save_csv(file_path)
+
         button_csv.clicked.connect(on_button_csv_clink)
         layout = QVBoxLayout()
         layout.addWidget(button_image)
@@ -810,7 +810,7 @@ class MainWindow(QMainWindow):
         MainWindow.setCentralWidget(main_widget)
 
     # 常用工具栏动态添加
-    def add_tool(self,index):
+    def add_tool(self, index):
         if index == 0:
             if self.select_action1.isChecked():
                 self.sideToolBar.addAction(self.action_plan)
@@ -874,6 +874,7 @@ class MainWindow(QMainWindow):
         new_window.setWindowTitle('图形障碍物')
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+
     # 随机障碍物窗口
     def open_randomOb(self):
         new_window = QtWidgets.QMainWindow()
@@ -889,6 +890,7 @@ class MainWindow(QMainWindow):
         new_window.setWindowTitle('输入起始点')
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+
     # 随机障碍物窗口
     def modify_map(self):
         new_window = QtWidgets.QMainWindow()
@@ -896,12 +898,14 @@ class MainWindow(QMainWindow):
         new_window.setWindowTitle('随机障碍物')
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+
     # 路径规划选择算法窗口
     def select_method(self):
         select_algorithm_window = SelectAlgorithmWindow(self.pygame_widget)
         # mainWindow.select_arithmetic(select_algorithm_window, self.pygame_widget)
         select_algorithm_window.show()
         self.windows.append(select_algorithm_window)  # 将新创建的窗口实例添加到列表中
+
     # 打开参数障碍物窗口
     def open_modifyOb(self):
         new_window = QtWidgets.QMainWindow()
@@ -911,6 +915,7 @@ class MainWindow(QMainWindow):
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
 
         # 打开参数障碍物窗口
+
     def open_start_path(self):
         analytical_planning_window = AnalyticalPlanningWindow(self.pygame_widget)
         # mainWindow.select_arithmetic(select_algorithm_window, self.pygame_widget)
@@ -957,6 +962,7 @@ class MainWindow(QMainWindow):
         fig = category.track_compare()
         canvas = FigureCanvas(fig)
         button_save_fig = QPushButton("保存路径叠加图片")
+
         def on_button_save_fig_click():  # 保存路径叠加图片
             dialog = QFileDialog()
             dialog.setAcceptMode(QFileDialog.AcceptSave)
@@ -969,6 +975,7 @@ class MainWindow(QMainWindow):
             # 打开文件对话框，并返回保存的文件路径
             file_path, _ = dialog.getSaveFileName(new_window, '保存路径叠加图片', '', '路径叠加图片 (*.png)')
             fig.savefig(file_path)
+
         button_save_fig.clicked.connect(on_button_save_fig_click)
         layout = QVBoxLayout()
         layout.addWidget(canvas)
@@ -992,6 +999,7 @@ class MainWindow(QMainWindow):
         new_window.setWindowTitle('多路径分析')
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+
     def open_result_category_compare(self, compare):
         """
         打开多算法比较信息的窗口
@@ -1088,10 +1096,10 @@ class MainWindow(QMainWindow):
         self.action_analyse.setText(_translate("MainWindow", "分析规划"))
         self.action_get.setText(_translate("MainWindow", "获取图形"))
         self.action_rasterization.setText(_translate("MainWindow", "栅格化"))
-    
+
     def start_plan(self, algorithm_instance):
         self.pygame_widget.result = None
-        self.pygame_widget.result,time = algorithm_instance(self).plan(self.pygame_widget.plan_surface)
+        self.pygame_widget.result, time = algorithm_instance(self).plan(self.pygame_widget.plan_surface)
         track = []
         for point in self.pygame_widget.result:
             track.append((point.x, point.y))
@@ -1129,10 +1137,12 @@ class MainWindow(QMainWindow):
         self.algorithm_list = AlgorithmList()
         self.algorithm_list.show()
 
+
 # 子窗口类
 class SubWindow(MainWindow):
     def __init__(self):
         super().__init__()
+
 
 if __name__ == '__main__':
     import sys
