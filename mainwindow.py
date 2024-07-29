@@ -16,6 +16,7 @@ from mappygame import PygameWidget
 from result import load_demo, Category_Demo, Category_Compare
 
 from selectalgorithmwindow import SelectAlgorithmWindow # 选择算法窗口类
+from analyticalplanningwindow import AnalyticalPlanningWindow
 
 def list_algorithm_modules(folder_path):
         algorithm_modules = []
@@ -425,6 +426,7 @@ class MainWindow(QMainWindow):
         # 单次路径结果比较分析
         button_single = QPushButton("单次路径结果比较分析", MainWindow)
         button_single.setGeometry(10, 10, 150, 30)
+
         def on_single_click():
             files, _ = QFileDialog.getOpenFileNames(MainWindow, '打开结果文件', '', '结果文件 (*.txt)')
             for index, f in enumerate(files):  # 循环选中的所有文件
@@ -910,11 +912,16 @@ class MainWindow(QMainWindow):
 
         # 打开参数障碍物窗口
     def open_start_path(self):
-        new_window = QtWidgets.QMainWindow()
-        mainWindow.start_path(new_window, self.pygame_widget)
-        new_window.setWindowTitle('规划算法')
-        new_window.show()
-        self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+        analytical_planning_window = AnalyticalPlanningWindow(self.pygame_widget)
+        # mainWindow.select_arithmetic(select_algorithm_window, self.pygame_widget)
+        analytical_planning_window.show()
+        self.windows.append(analytical_planning_window)
+
+        # new_window = QtWidgets.QMainWindow()
+        # mainWindow.start_path(new_window, self.pygame_widget)
+        # new_window.setWindowTitle('规划算法')
+        # new_window.show()
+        # self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
 
     def open_result_single(self, index, f):
         """
