@@ -18,6 +18,10 @@ from result import load_demo, Category_Demo, Category_Compare
 from selectalgorithmwindow import SelectAlgorithmWindow # 选择算法窗口类
 from analyticalplanningwindow import AnalyticalPlanningWindow
 from randomob import RandomOb
+from argumentob import ArgumentOb
+from graphob import GraphOb
+from inputstartandend import InputStartAndEnd
+from modifymap import ModifyMap
 
 def list_algorithm_modules(folder_path):
         algorithm_modules = []
@@ -246,7 +250,7 @@ class MainWindow(QMainWindow):
         self.select_action10.setCheckable(True)
         self.select_action10.triggered.connect(lambda: self.add_tool(9))
 
-        self.select_action11 = self.menu_display.addAction("地图栅格大小调整")
+        self.select_action11 = self.menu_display.addAction("调整栅格")
         self.select_action11.setCheckable(True)
         self.select_action11.triggered.connect(lambda: self.add_tool(10))
 
@@ -281,252 +285,68 @@ class MainWindow(QMainWindow):
 
         self.layout.addWidget(self.pygame_widget)
 
-    # 参数障碍物窗口 根据用户选择生成相同大小障碍物
-    def modify_obstacles(self, MainWindow, pygame_widget):
-        self.loginWindow_new = None
-        MainWindow.setObjectName("MainWindow")
-        MainWindow.setFixedSize(400, 300) # 窗口大小锁定
-        # 创建障碍物数量标签
-        self.label_sum = QLabel("障碍物数量:", MainWindow)
-        self.label_sum.setGeometry(60, 50, 80, 30)  # 设置标签位置和大小
-        # 创建第一个输入框
-        self.lineEdit1 = QLineEdit(MainWindow)
-        self.lineEdit1.setGeometry(140, 50, 200, 30)  # 设置输入框位置和大小
-        self.lineEdit1.setPlaceholderText("请输入障碍物的数量")  # 设置提示文字
 
-        # 创建障碍物大小标签
-        label_size = QLabel("障碍物大小:", MainWindow)
-        label_size.setGeometry(60, 100, 80, 30)  # 设置标签位置和大小
-        # # 创建第二个输入框
-        # self.lineEdit2 = QLineEdit(MainWindow)
-        # self.lineEdit2.setGeometry(140, 100, 200, 30)  # 设置输入框位置和大小
-        # self.lineEdit2.setPlaceholderText("迭代次数")  # 设置提示文字
-        # 创建障碍物大小滑块
-        slider = QSlider(MainWindow)
-        slider.setGeometry(140, 100, 200, 30)  # 设置滑块位置和大小
-        slider.setMinimum(5)  # 设置最小值
-        slider.setMaximum(200)  # 设置最大值
-        slider.setOrientation(Qt.Horizontal)  # 设置水平方向
-        # 创建标签用于显示滑块的值
-        label_slider_value = QLabel("5", MainWindow)
-        label_slider_value.setGeometry(350, 100, 40, 30)  # 设置标签位置和大小
-
-        # 连接滑块数值改变的信号和槽
-        slider.valueChanged.connect(lambda value: label_slider_value.setText(str(value)))
-        # 创建障碍物大小标签
-        label_type = QLabel("障碍物类型:", MainWindow)
-        label_type.setGeometry(60, 150, 80, 30)  # 设置标签位置和大小
-
-        # 创建多选框
-        checkbox1 = QCheckBox("圆形", MainWindow)
-        checkbox1.setGeometry(140, 150, 150, 30)  # 设置多选框位置和大小
-
-        checkbox2 = QCheckBox("正方形", MainWindow)
-        checkbox2.setGeometry(210, 150, 150, 30)  # 设置多选框位置和大小
-
-        checkbox3 = QCheckBox("椭圆", MainWindow)
-        checkbox3.setGeometry(280, 150, 150, 30)  # 设置多选框位置和大小
-
-        checkbox4 = QCheckBox("菱形", MainWindow)
-        checkbox4.setGeometry(140, 180, 150, 30)  # 设置多选框位置和大小
-
-        checkbox5 = QCheckBox("矩形", MainWindow)
-        checkbox5.setGeometry(210, 180, 150, 30)  # 设置多选框位置和大小
-
-        # 创建障碍物是否重叠
-        label_type = QLabel("障碍物重叠:", MainWindow)
-        label_type.setGeometry(60, 210, 80, 30)  # 设置标签位置和大小
-
-        # 创建单选按钮组
-        radio_button_group = QButtonGroup(MainWindow)
-        radio_button_group.setExclusive(True)  # 设置为互斥，只能选择一个单选按钮
-        # 创建是单选按钮
-        radio_button_ok = QRadioButton("重叠", MainWindow)
-        radio_button_ok.setGeometry(140, 210, 80, 30)  # 设置单选按钮位置和大小
-        radio_button_group.addButton(radio_button_ok)  # 将单选按钮添加到单选按钮组
-        # 创建是单选按钮
-        radio_button_no = QRadioButton("分离", MainWindow)
-        radio_button_no.setGeometry(210, 210, 80, 30)  # 设置单选按钮位置和大小
-        radio_button_group.addButton(radio_button_no)  # 将单选按钮添加到单选按钮组
-
-        # 创建生成障碍物按钮
-        self.button_generate_obstacle = QPushButton("生成障碍物", MainWindow)
-        self.button_generate_obstacle.setGeometry(130, 250, 120, 30)  # 设置按钮位置和大小
-
-        label_notice = QLabel("", MainWindow)
-        label_notice.setGeometry(140, 15, 150, 30)  # 设置标签位置和大小
-
-        def on_button_click():
-            obstacle_quantity = self.lineEdit1.text()
-            if not obstacle_quantity:
-                label_notice.setText("请输入障碍物数量！")
-                return
-            obstacle_size = slider.value()
-            obstacle_types = []
-            if not checkbox1.isChecked() and not checkbox2.isChecked() and not checkbox3.isChecked() and not checkbox4.isChecked() and not checkbox5.isChecked():
-                label_notice.setText("请选择至少一种障碍物类型！")
-                return
-            if checkbox1.isChecked():
-                obstacle_types.append(0)
-            if checkbox2.isChecked():
-                obstacle_types.append(1)
-            if checkbox3.isChecked():
-                obstacle_types.append(2)
-            if checkbox4.isChecked():
-                obstacle_types.append(3)
-            if checkbox5.isChecked():
-                obstacle_types.append(4)
-            if not radio_button_ok.isChecked() and not radio_button_no.isChecked():
-                label_notice.setText("请选择障碍物是否重叠！")
-                return
-            if radio_button_ok.isChecked():
-                obstacle_overlap = "T"
-            elif radio_button_no.isChecked():
-                obstacle_overlap = "F"
-            pygame_widget.graph_setting(obstacle_quantity, obstacle_size, obstacle_types, obstacle_overlap)
-            label_notice.setText("障碍物生成成功！")
-
-        # 连接按钮的点击信号
-        self.button_generate_obstacle.clicked.connect(on_button_click)
-
-
-
-
-
-
-
-    
-    
-
-    # 地图栅格大小调整
-    def map(self, MainWindow, pygame_widget):
-        self.loginWindow_new = None
-        MainWindow.setObjectName("地图参数")
-        MainWindow.setFixedSize(300, 120)
-        # 创建障碍物数量标签
-        self.label_sum = QLabel("栅格大小:", MainWindow)
-        self.label_sum.setGeometry(10, 20, 80, 30)  # 设置标签位置和大小
-        # 创建第一个输入框
-        self.lineEdit1 = QLineEdit(MainWindow)
-        self.lineEdit1.setGeometry(80, 20, 200, 30)  # 设置输入框位置和大小
-        self.lineEdit1.setPlaceholderText("请输入栅格大小")  # 设置提示文字
-        # 创建生成障碍物按钮
-        self.button_modify = QPushButton("调整", MainWindow)
-        self.button_modify.setGeometry(90, 60, 60, 30)  # 设置按钮位置和大小
-        self.button_default = QPushButton("默认", MainWindow)
-        self.button_default.setGeometry(160, 60, 60, 30)  # 设置按钮位置和大小
-        label_notice = QLabel("", MainWindow)
-        label_notice.setGeometry(90, 90, 150, 30)  # 设置标签位置和大小
-
-        def on_button_click():
-            obstacle_quantity = self.lineEdit1.text()
-            if not obstacle_quantity:
-                label_notice.setText("请输入地图栅格大小！")
-                return
-            try:
-                int(obstacle_quantity)
-                pygame_widget.modifyMap(int(obstacle_quantity))
-            except (ValueError, TypeError):
-                label_notice.setText("请输入正确的整型栅格大小！")
-                return
-            label_notice.setText("栅格大小修改成功！")
-        def on_button_default():
-            print("默认地图")
-        # 连接按钮的点击信号
-        self.button_modify.clicked.connect(on_button_click)
 
     # 起始点输入窗口
-    def input_startAndEnd(self, MainWindow, pygame_widget):
-        self.loginWindow_new = None
-        MainWindow.setObjectName("地图起始点")
-        MainWindow.setFixedSize(300, 160)
-        # 创建起点标签
-        self.label_start = QLabel("起点:", MainWindow)
-        self.label_start.setGeometry(10, 20, 80, 30)  # 设置标签位置和大小
-        # 创建第一个输入框
-        self.lineEdit1 = QLineEdit(MainWindow)
-        self.lineEdit1.setGeometry(80, 20, 200, 30)  # 设置输入框位置和大小
-        self.lineEdit1.setPlaceholderText("请输入起点（x，y）")  # 设置提示文字
-        # 创建起点标签
-        self.label_end = QLabel("终点:", MainWindow)
-        self.label_end.setGeometry(10, 60, 80, 30)  # 设置标签位置和大小
-        # 创建第一个输入框
-        self.lineEdit2 = QLineEdit(MainWindow)
-        self.lineEdit2.setGeometry(80, 60, 200, 30)  # 设置输入框位置和大小
-        self.lineEdit2.setPlaceholderText("请输入起点（x，y）")  # 设置提示文字
-
-        # 创建生成起始点按钮
-        self.button_modify = QPushButton("生成", MainWindow)
-        self.button_modify.setGeometry(120, 100, 60, 30)  # 设置按钮位置和大小
-        label_notice = QLabel("", MainWindow)
-        label_notice.setGeometry(100, 120, 150, 30)  # 设置标签位置和大小
-
-        def on_button_click():
-            start = self.lineEdit1.text()
-            end = self.lineEdit2.text()
-
-            # TODO 起始点坐标获取以及调用方法未完成
-            if not start and not end:
-                label_notice.setText("请输入起始点坐标！")
-                return
-
-            print(start)
-            pattern = r"\((\d+),(\d+)\)"  # 匹配坐标的正则表达式模式
-            match = re.match(pattern, start)
-            print(match)
-            if match:
-                keyx = int(match.group(1))  # 提取横坐标
-                keyy = int(match.group(2))  # 提取纵坐标
-                print("起点横坐标:", keyx)
-                print("起点纵坐标:", keyy)
-                pygame_widget.painting_ori(keyx, keyy)  # 目前执行到这里程序就结束了，应该是调用有问题
-            else:
-                print("坐标格式不正确")
-            match_2 = re.match(pattern, end)
-            if match_2:
-                # global keyx_2, keyy_2
-                keyx_2 = int(match_2.group(1))  # 提取横坐标
-                keyy_2 = int(match_2.group(2))  # 提取纵坐标
-                print("终点横坐标:", keyx_2)
-                print("终点纵坐标:", keyy_2)
-                pygame_widget.painting_end(keyx_2, keyy_2)
-            else:
-                print("坐标格式不正确")
-            label_notice.setText("输入起始点生成成功！")
-        # 连接按钮的点击信号
-        self.button_modify.clicked.connect(on_button_click)
-
-    # 选择图形障碍物生成窗口 单个生成
-    def graph_ob(self, MainWindow, pygame_widget):
-        self.loginWindow_new = None
-        MainWindow.setObjectName("图形障碍物")
-        MainWindow.setFixedSize(300, 120)
-        # 创建起点标签
-        self.label_graph = QLabel("障碍物类型:", MainWindow)
-        self.label_graph.setGeometry(60, 20, 80, 30)  # 设置标签位置和大小
-        # 创建下拉列表
-        self.combo_box = QComboBox(MainWindow)
-        self.combo_box.setGeometry(130, 20, 120, 30)  # 设置下拉列表位置和大小
-        self.combo_box.addItem("矩形")
-        self.combo_box.addItem("圆形")
-        self.combo_box.addItem("三角形")
-        self.combo_box.addItem("椭圆形")
-        self.combo_box.addItem("菱形")
-        self.combo_box.addItem("五角形")
-        # 创建生成障碍物按钮
-        self.button_modify = QPushButton("生成", MainWindow)
-        self.button_modify.setGeometry(90, 60, 120, 30)  # 设置按钮位置和大小
-        label_notice = QLabel("", MainWindow)
-        label_notice.setGeometry(90, 90, 150, 30)  # 设置标签位置和大小
-
-        # 按钮点击事件处理函数
-        def on_button_click():
-            selected_index = self.combo_box.currentIndex()
-            pygame_widget.paint_random_one(selected_index+1)
-            label_notice.setText("障碍物生成成功！")
-        # 连接按钮的点击信号到处理函数
-        self.button_modify.clicked.connect(on_button_click)
-
+    # def input_startAndEnd(self, MainWindow, pygame_widget):
+    #     self.loginWindow_new = None
+    #     MainWindow.setObjectName("地图起始点")
+    #     MainWindow.setFixedSize(300, 160)
+    #     # 创建起点标签
+    #     self.label_start = QLabel("起点:", MainWindow)
+    #     self.label_start.setGeometry(10, 20, 80, 30)  # 设置标签位置和大小
+    #     # 创建第一个输入框
+    #     self.lineEdit1 = QLineEdit(MainWindow)
+    #     self.lineEdit1.setGeometry(80, 20, 200, 30)  # 设置输入框位置和大小
+    #     self.lineEdit1.setPlaceholderText("请输入起点（x，y）")  # 设置提示文字
+    #     # 创建起点标签
+    #     self.label_end = QLabel("终点:", MainWindow)
+    #     self.label_end.setGeometry(10, 60, 80, 30)  # 设置标签位置和大小
+    #     # 创建第一个输入框
+    #     self.lineEdit2 = QLineEdit(MainWindow)
+    #     self.lineEdit2.setGeometry(80, 60, 200, 30)  # 设置输入框位置和大小
+    #     self.lineEdit2.setPlaceholderText("请输入起点（x，y）")  # 设置提示文字
+    #
+    #     # 创建生成起始点按钮
+    #     self.button_modify = QPushButton("生成", MainWindow)
+    #     self.button_modify.setGeometry(120, 100, 60, 30)  # 设置按钮位置和大小
+    #     label_notice = QLabel("", MainWindow)
+    #     label_notice.setGeometry(100, 120, 150, 30)  # 设置标签位置和大小
+    #
+    #     def on_button_click():
+    #         start = self.lineEdit1.text()
+    #         end = self.lineEdit2.text()
+    #
+    #         # TODO 起始点坐标获取以及调用方法未完成
+    #         if not start and not end:
+    #             label_notice.setText("请输入起始点坐标！")
+    #             return
+    #
+    #         print(start)
+    #         pattern = r"\((\d+),(\d+)\)"  # 匹配坐标的正则表达式模式
+    #         match = re.match(pattern, start)
+    #         print(match)
+    #         if match:
+    #             keyx = int(match.group(1))  # 提取横坐标
+    #             keyy = int(match.group(2))  # 提取纵坐标
+    #             print("起点横坐标:", keyx)
+    #             print("起点纵坐标:", keyy)
+    #             pygame_widget.painting_ori(keyx, keyy)  # 目前执行到这里程序就结束了，应该是调用有问题
+    #         else:
+    #             print("坐标格式不正确")
+    #         match_2 = re.match(pattern, end)
+    #         if match_2:
+    #             # global keyx_2, keyy_2
+    #             keyx_2 = int(match_2.group(1))  # 提取横坐标
+    #             keyy_2 = int(match_2.group(2))  # 提取纵坐标
+    #             print("终点横坐标:", keyx_2)
+    #             print("终点纵坐标:", keyy_2)
+    #             pygame_widget.painting_end(keyx_2, keyy_2)
+    #         else:
+    #             print("坐标格式不正确")
+    #         label_notice.setText("输入起始点生成成功！")
+    #     # 连接按钮的点击信号
+    #     self.button_modify.clicked.connect(on_button_click)
 
 
     # 常用工具栏动态添加
@@ -589,11 +409,10 @@ class MainWindow(QMainWindow):
 
     # 图形障碍物窗口
     def select_graph(self):
-        new_window = QtWidgets.QMainWindow()
-        mainWindow.graph_ob(new_window, self.pygame_widget)
-        new_window.setWindowTitle('图形障碍物')
-        new_window.show()
-        self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+        select_algorithm_window = GraphOb(self.pygame_widget)
+        # mainWindow.select_arithmetic(select_algorithm_window, self.pygame_widget)
+        select_algorithm_window.show()
+        self.windows.append(select_algorithm_window)  # 将新创建的窗口实例添加到列表中
     # 随机障碍物窗口
     def open_randomOb(self):
         select_algorithm_window = RandomOb(self.pygame_widget)
@@ -603,18 +422,21 @@ class MainWindow(QMainWindow):
 
     # 随机障碍物窗口
     def startAndEnd(self):
-        new_window = QtWidgets.QMainWindow()
-        mainWindow.input_startAndEnd(new_window, self.pygame_widget)
-        new_window.setWindowTitle('输入起始点')
-        new_window.show()
-        self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+        select_algorithm_window = InputStartAndEnd(self.pygame_widget)
+        # mainWindow.select_arithmetic(select_algorithm_window, self.pygame_widget)
+        select_algorithm_window.show()
+        self.windows.append(select_algorithm_window)  # 将新创建的窗口实例添加到列表中
+        # new_window = QtWidgets.QMainWindow()
+        # mainWindow.input_startAndEnd(new_window, self.pygame_widget)
+        # new_window.setWindowTitle('输入起始点')
+        # new_window.show()
+        # self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
     # 随机障碍物窗口
     def modify_map(self):
-        new_window = QtWidgets.QMainWindow()
-        mainWindow.map(new_window, self.pygame_widget)
-        new_window.setWindowTitle('随机障碍物')
-        new_window.show()
-        self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+        select_algorithm_window = ModifyMap(self.pygame_widget)
+        # mainWindow.select_arithmetic(select_algorithm_window, self.pygame_widget)
+        select_algorithm_window.show()
+        self.windows.append(select_algorithm_window)  # 将新创建的窗口实例添加到列表中
     # 路径规划选择算法窗口
     def select_method(self):
         select_algorithm_window = SelectAlgorithmWindow(self.pygame_widget)
@@ -623,11 +445,10 @@ class MainWindow(QMainWindow):
         self.windows.append(select_algorithm_window)  # 将新创建的窗口实例添加到列表中
     # 打开参数障碍物窗口
     def open_modifyOb(self):
-        new_window = QtWidgets.QMainWindow()
-        mainWindow.modify_obstacles(new_window, self.pygame_widget)
-        new_window.setWindowTitle('参数障碍物')
-        new_window.show()
-        self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+        select_algorithm_window = ArgumentOb(self.pygame_widget)
+        # mainWindow.select_arithmetic(select_algorithm_window, self.pygame_widget)
+        select_algorithm_window.show()
+        self.windows.append(select_algorithm_window)  # 将新创建的窗口实例添加到列表中
 
         # 打开参数障碍物窗口
     def open_start_path(self):
@@ -635,12 +456,6 @@ class MainWindow(QMainWindow):
         # mainWindow.select_arithmetic(select_algorithm_window, self.pygame_widget)
         analytical_planning_window.show()
         self.windows.append(analytical_planning_window)
-
-        # new_window = QtWidgets.QMainWindow()
-        # mainWindow.start_path(new_window, self.pygame_widget)
-        # new_window.setWindowTitle('规划算法')
-        # new_window.show()
-        # self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
 
 
 
@@ -723,7 +538,7 @@ class MainWindow(QMainWindow):
         self.action_randomPoint.setText(_translate("MainWindow", "随机起始点"))
         self.action_input.setText(_translate("MainWindow", "输入起始点"))
         self.action_empty.setText(_translate("MainWindow", "清空地图"))
-        self.action_mapModify.setText(_translate("MainWindow", "调整地图栅格大小"))
+        self.action_mapModify.setText(_translate("MainWindow", "调整栅格"))
         self.action_plan.setText(_translate("MainWindow", "路径规划"))
         self.action_analyse.setText(_translate("MainWindow", "分析规划"))
         self.action_get.setText(_translate("MainWindow", "获取图形"))
