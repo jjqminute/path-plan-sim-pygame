@@ -409,23 +409,23 @@ class MainWindow(QMainWindow):
 
     # 图形障碍物窗口
     def select_graph(self):
-        select_algorithm_window = GraphOb(self.pygame_widget)
+        graph_ob = GraphOb(self.pygame_widget)
         # mainWindow.select_arithmetic(select_algorithm_window, self.pygame_widget)
-        select_algorithm_window.show()
-        self.windows.append(select_algorithm_window)  # 将新创建的窗口实例添加到列表中
+        graph_ob.show()
+        self.windows.append(graph_ob)  # 将新创建的窗口实例添加到列表中
     # 随机障碍物窗口
     def open_randomOb(self):
-        select_algorithm_window = RandomOb(self.pygame_widget)
+        random_ob = RandomOb(self.pygame_widget)
         # mainWindow.select_arithmetic(select_algorithm_window, self.pygame_widget)
-        select_algorithm_window.show()
-        self.windows.append(select_algorithm_window)  # 将新创建的窗口实例添加到列表中
+        random_ob.show()
+        self.windows.append(random_ob)  # 将新创建的窗口实例添加到列表中
 
     # 随机障碍物窗口
     def startAndEnd(self):
-        select_algorithm_window = InputStartAndEnd(self.pygame_widget)
+        input_start_end = InputStartAndEnd(self.pygame_widget)
         # mainWindow.select_arithmetic(select_algorithm_window, self.pygame_widget)
-        select_algorithm_window.show()
-        self.windows.append(select_algorithm_window)  # 将新创建的窗口实例添加到列表中
+        input_start_end.show()
+        self.windows.append(input_start_end)  # 将新创建的窗口实例添加到列表中
         # new_window = QtWidgets.QMainWindow()
         # mainWindow.input_startAndEnd(new_window, self.pygame_widget)
         # new_window.setWindowTitle('输入起始点')
@@ -433,10 +433,10 @@ class MainWindow(QMainWindow):
         # self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
     # 随机障碍物窗口
     def modify_map(self):
-        select_algorithm_window = ModifyMap(self.pygame_widget)
+        modify_map = ModifyMap(self.pygame_widget)
         # mainWindow.select_arithmetic(select_algorithm_window, self.pygame_widget)
-        select_algorithm_window.show()
-        self.windows.append(select_algorithm_window)  # 将新创建的窗口实例添加到列表中
+        modify_map.show()
+        self.windows.append(modify_map)  # 将新创建的窗口实例添加到列表中
     # 路径规划选择算法窗口
     def select_method(self):
         select_algorithm_window = SelectAlgorithmWindow(self.pygame_widget)
@@ -445,10 +445,10 @@ class MainWindow(QMainWindow):
         self.windows.append(select_algorithm_window)  # 将新创建的窗口实例添加到列表中
     # 打开参数障碍物窗口
     def open_modifyOb(self):
-        select_algorithm_window = ArgumentOb(self.pygame_widget)
+        grgument_ob = ArgumentOb(self.pygame_widget)
         # mainWindow.select_arithmetic(select_algorithm_window, self.pygame_widget)
-        select_algorithm_window.show()
-        self.windows.append(select_algorithm_window)  # 将新创建的窗口实例添加到列表中
+        grgument_ob.show()
+        self.windows.append(grgument_ob)  # 将新创建的窗口实例添加到列表中
 
         # 打开参数障碍物窗口
     def open_start_path(self):
