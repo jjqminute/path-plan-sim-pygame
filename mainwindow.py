@@ -15,7 +15,7 @@ from algorithmlist import AlgorithmList
 from mappygame import PygameWidget
 from result import load_demo, Category_Demo, Category_Compare
 
-from selectalgorithmwindow import SelectAlgorithmWindow # 选择算法窗口类
+from selectalgorithmwindow import SelectAlgorithmWindow  # 选择算法窗口类
 from analyticalplanningwindow import AnalyticalPlanningWindow
 from randomob import RandomOb
 from argumentob import ArgumentOb
@@ -265,8 +265,6 @@ class MainWindow(QMainWindow):
 
         self.layout.addWidget(self.pygame_widget)
 
-
-
     # 起始点输入窗口
     # def input_startAndEnd(self, MainWindow, pygame_widget):
     #     self.loginWindow_new = None
@@ -327,7 +325,6 @@ class MainWindow(QMainWindow):
     #         label_notice.setText("输入起始点生成成功！")
     #     # 连接按钮的点击信号
     #     self.button_modify.clicked.connect(on_button_click)
-
 
     # 常用工具栏动态添加
     def add_tool(self, index):
@@ -393,6 +390,7 @@ class MainWindow(QMainWindow):
         # mainWindow.select_arithmetic(select_algorithm_window, self.pygame_widget)
         graph_ob.show()
         self.windows.append(graph_ob)  # 将新创建的窗口实例添加到列表中
+
     # 随机障碍物窗口
     def open_randomOb(self):
         random_ob = RandomOb(self.pygame_widget)
@@ -411,12 +409,14 @@ class MainWindow(QMainWindow):
         # new_window.setWindowTitle('输入起始点')
         # new_window.show()
         # self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
+
     # 随机障碍物窗口
     def modify_map(self):
         modify_map = ModifyMap(self.pygame_widget)
         # mainWindow.select_arithmetic(select_algorithm_window, self.pygame_widget)
         modify_map.show()
         self.windows.append(modify_map)  # 将新创建的窗口实例添加到列表中
+
     # 路径规划选择算法窗口
     def select_method(self):
         select_algorithm_window = SelectAlgorithmWindow(self.pygame_widget)
@@ -438,8 +438,6 @@ class MainWindow(QMainWindow):
         # mainWindow.select_arithmetic(select_algorithm_window, self.pygame_widget)
         analytical_planning_window.show()
         self.windows.append(analytical_planning_window)
-
-
 
     # 文本框输出提示信息
     def printf(self, msg, x=None, y=None):
