@@ -75,7 +75,6 @@ class SelectAlgorithmWindow(QMainWindow):
         self.radioLayout1 = QHBoxLayout()
         label_result = QLabel("是否保存结果:")
         self.radioLayout1.addWidget(label_result)
-        # label_result.setGeometry(30, 60, 80, 30)
         self.radio_button_result = QButtonGroup()
         self.radio_button_result.setExclusive(True)
 
@@ -87,11 +86,9 @@ class SelectAlgorithmWindow(QMainWindow):
         # 设置结果文件名称的部分
         self.label_path = QLabel("")
         self.mainLayout.addWidget(self.label_path)
-        # label_path.setGeometry(30, 120, 200, 30)
         self.line_edit_result = QLineEdit("")
         self.line_edit_result.setPlaceholderText("请输入文件名")
         self.mainLayout.addWidget(self.line_edit_result)
-        # line_edit_result.setGeometry(90, 150, 120, 30)
         self.line_edit_result.hide()  # 默认是不保存结果,所以先隐藏
 
         self.radio_button_result.buttonClicked.connect(self.on_result_click)
@@ -100,24 +97,20 @@ class SelectAlgorithmWindow(QMainWindow):
         self.mainLayout.addLayout(self.radioLayout2)
         label_run = QLabel("是否运行多次:")
         self.radioLayout2.addWidget(label_run)
-        # label_run.setGeometry(30, 90, 80, 30)
         self.radio_button_run = QButtonGroup()
         self.radio_button_run.setExclusive(True)
         self.radio_button_run_true = QRadioButton("是")
         self.radioLayout2.addWidget(self.radio_button_run_true)
-        # radio_button_run_true.setGeometry(110, 90, 80, 30)
         self.radio_button_run.addButton(self.radio_button_run_true)
         self.radio_button_run_false = QRadioButton("否")
         self.radioLayout2.addWidget(self.radio_button_run_false)
         self.radioLayout2.addStretch()
-        # radio_button_run_false.setGeometry(170, 90, 80, 30)
         self.radio_button_run_false.setChecked(True)  # 默认是只运行一次
         self.radio_button_run.addButton(self.radio_button_run_false)
 
         # 选择运行次数部分
         self.spin_box = QSpinBox()  # 数字选择框
         self.mainLayout.addWidget(self.spin_box)
-        # spin_box.setGeometry(30, 180, 50, 30)
         self.spin_box.setMinimum(0)  # 设置最小值
         self.spin_box.setMaximum(100)  # 设置最大值
         self.spin_box.setValue(1)  # 设置默认值
@@ -126,11 +119,9 @@ class SelectAlgorithmWindow(QMainWindow):
         self.radio_button_run.buttonClicked.connect(self.on_run_click)
         # 创建生成障碍物按钮
         self.button_generate_obstacle = QPushButton("开始规划")
-        # self.button_generate_obstacle.setGeometry(90, 180, 120, 30)  # 设置按钮位置和大小
 
         self.label_notice = QLabel("")
         self.mainLayout.addWidget(self.label_notice)
-        # label_notice.setGeometry(80, 210, 150, 30)  # 设置标签位置和大小
 
         self.add_button()
 
@@ -152,12 +143,10 @@ class SelectAlgorithmWindow(QMainWindow):
 
         self.radio_button_result_true = QRadioButton("是")
         self.radioLayout1.addWidget(self.radio_button_result_true)
-        # radio_button_result_true.setGeometry(110, 60, 80, 30)
         self.radio_button_result.addButton(self.radio_button_result_true)
 
         self.radio_button_result_false = QRadioButton("否")
         self.radioLayout1.addWidget(self.radio_button_result_false)
-        # radio_button_result_false.setGeometry(170, 60, 80, 30)
         self.radio_button_result_false.setChecked(True)  # 默认是不保存结果
         self.radio_button_result.addButton(self.radio_button_result_false)
 

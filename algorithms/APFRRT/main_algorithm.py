@@ -112,7 +112,7 @@ class Main():
         #print (total_force_x, total_force_y)
         # 计算随机点的偏移量
         magnitude = math.sqrt(total_force_x ** 2 + total_force_y ** 2)
-        if magnitude > 0 and (total_force_x >1or total_force_y >1):
+        if magnitude > 0 and (total_force_x >1 or total_force_y >1):
             # 根据势场和斥力的合力方向调整随机点的偏移量
             offset_factor = 1.2
             #随机性更强

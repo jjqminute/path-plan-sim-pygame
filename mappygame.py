@@ -22,15 +22,6 @@ from shapely.geometry import Point, MultiPoint, shape
 import cv2
 import numpy
 
-""" from arithmetic.APF.apf import apf
-from arithmetic.Astar.Map import Map
-from arithmetic.Astar.astar import astar
-from arithmetic.RRT.rrt import Rrt
-from arithmetic.RRT.rrt import Rrt
-from arithmetic.APFRRT.APFRRT import APFRRT
-from arithmetic.PRM.prm import prm
-from arithmetic.PRM.iprm import iprm """
-
 from result import Result_Demo
 
 
@@ -56,7 +47,7 @@ def surface_to_cv_bgr(surface: pygame.Surface) -> cv2.typing.MatLike:
 
 def cv_bgr_to_surface(img_bgr: cv2.typing.MatLike) -> pygame.Surface:
     """
-    Converts pygame surface pixel data into opencv BGR format Mat
+    Converts opencv BGR format Mat into pygame surface pixel data
     """
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     height, width = img_rgb.shape[:2]
@@ -206,79 +197,79 @@ class PygameWidget(QWidget):
         self.offset_x = 0
         self.result = None
 
-    # A*算法
-    def startAstar(self):
-        self.result = None
-        # self.obs_surface.fill(PygameWidget.BACK_COLOR)
-        self.search = astar(self)
-        self.result,time = self.search.process(self.plan_surface)
+    # # A*算法
+    # def startAstar(self):
+    #     self.result = None
+    #     # self.obs_surface.fill(PygameWidget.BACK_COLOR)
+    #     self.search = astar(self)
+    #     self.result,time = self.search.process(self.plan_surface)
 
-        if self.result is not None:
-            for k in self.result:
-                pygame.draw.circle(self.plan_surface, (0, 100, 255), (k.x, k.y), 3)
-                # time.sleep(0.1)
-        track = []
-        for point in self.result:
-            x = point.x
-            y = point.y
-            track.append((x, y))
-        # self.save_result(time1,track)
-        return track, time
-    # RRT算法
-    def startRtt(self):
-        self.result = None
-        self.search = Rrt(self)
-        self.result, time1 = self.search.plan(self.plan_surface)
-        if self.result is not None:
-            for k in self.result:
-                pygame.draw.circle(self.plan_surface,(0,100,255),(k.x,k.y),3)
-        if self.result is not None:
-            for k in range(len(self.result) - 1):
-                pygame.draw.line(self.plan_surface, (0, 100, 255), (self.result[k].x, self.result[k].y),
-                                 (self.result[k + 1].x, self.result[k + 1].y), 3)
-        track = []
-        for point in self.result:
-            x = point.x
-            y = point.y
-            track.append((x, y))
-        # self.save_result(time1,track)
-        return track, time1
+    #     if self.result is not None:
+    #         for k in self.result:
+    #             pygame.draw.circle(self.plan_surface, (0, 100, 255), (k.x, k.y), 3)
+    #             # time.sleep(0.1)
+    #     track = []
+    #     for point in self.result:
+    #         x = point.x
+    #         y = point.y
+    #         track.append((x, y))
+    #     # self.save_result(time1,track)
+    #     return track, time
+    # # RRT算法
+    # def startRtt(self):
+    #     self.result = None
+    #     self.search = Rrt(self)
+    #     self.result, time1 = self.search.plan(self.plan_surface)
+    #     if self.result is not None:
+    #         for k in self.result:
+    #             pygame.draw.circle(self.plan_surface,(0,100,255),(k.x,k.y),3)
+    #     if self.result is not None:
+    #         for k in range(len(self.result) - 1):
+    #             pygame.draw.line(self.plan_surface, (0, 100, 255), (self.result[k].x, self.result[k].y),
+    #                              (self.result[k + 1].x, self.result[k + 1].y), 3)
+    #     track = []
+    #     for point in self.result:
+    #         x = point.x
+    #         y = point.y
+    #         track.append((x, y))
+    #     # self.save_result(time1,track)
+    #     return track, time1
 
-    def startApf(self):
-        self.result = None
-        self.search = apf(self)
-        self.result, time1 = self.search.plan(self.plan_surface)
-        if self.result is not None:
-            for k in self.result:
-                pygame.draw.circle(self.plan_surface, (0, 100, 255), (k[0], k[1]), 3)
-            for k in range(len(self.result) - 1):
-                pygame.draw.line(self.plan_surface, (0, 100, 255), (self.result[k][0], self.result[k][1]),
-                                 (self.result[k + 1][0], self.result[k + 1][1]), 3)
-        # self.save_result(time1, self.result)
-        return self.result,time1
-    def startApfRrt(self):
-        self.result = None
-        self.result,time = APFRRT(self).plan(self.plan_surface)
-        track = []
-        for point in self.result[:-1]:
-            track.append((point.x, point.y))
-        return track, time
+    # def startApf(self):
+    #     self.result = None
+    #     self.search = apf(self)
+    #     self.result, time1 = self.search.plan(self.plan_surface)
+    #     if self.result is not None:
+    #         for k in self.result:
+    #             pygame.draw.circle(self.plan_surface, (0, 100, 255), (k[0], k[1]), 3)
+    #         for k in range(len(self.result) - 1):
+    #             pygame.draw.line(self.plan_surface, (0, 100, 255), (self.result[k][0], self.result[k][1]),
+    #                              (self.result[k + 1][0], self.result[k + 1][1]), 3)
+    #     # self.save_result(time1, self.result)
+    #     return self.result,time1
+    # def startApfRrt(self):
+    #     self.result = None
+    #     self.result,time = APFRRT(self).plan(self.plan_surface)
+    #     track = []
+    #     for point in self.result[:-1]:
+    #         track.append((point.x, point.y))
+    #     return track, time
 
-    def startPRm(self):
-        self.result = None
-        self.result,time = prm(self).plan(self.plan_surface)
-        track = []
-        for point in self.result:
-            track.append((point.x, point.y))
-        return track, time
+    # def startPRm(self):
+    #     self.result = None
+    #     self.result,time = prm(self).plan(self.plan_surface)
+    #     track = []
+    #     for point in self.result:
+    #         track.append((point.x, point.y))
+    #     return track, time
     
-    def startIPRm(self):
-        self.result = None
-        self.result,time = iprm(self).plan(self.plan_surface)
-        track = []
-        for point in self.result:
-            track.append((point.x, point.y))
-        return track, time
+    # def startIPRm(self):
+    #     self.result = None
+    #     self.result,time = iprm(self).plan(self.plan_surface)
+    #     track = []
+    #     for point in self.result:
+    #         track.append((point.x, point.y))
+    #     return track, time
 
     def save_result(self, time1, track, file_path):
         """

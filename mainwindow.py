@@ -1,3 +1,4 @@
+import sys
 import re
 import os
 import importlib
@@ -572,9 +573,11 @@ class SubWindow(MainWindow):
 
 
 if __name__ == '__main__':
-    import sys
-
+    if hasattr(Qt, 'AA_EnableHighDpiScaling'):
+        QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+    if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
+        QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
     app = QtWidgets.QApplication(sys.argv)
     mainWindow = MainWindow()
     mainWindow.show()
-    sys.exit(app.exec())
+    sys.exit(app.exec_())
