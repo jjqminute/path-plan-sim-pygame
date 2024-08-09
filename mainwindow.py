@@ -23,6 +23,7 @@ from argumentob import ArgumentOb
 from graphob import GraphOb
 from inputstartandend import InputStartAndEnd
 from modifymap import ModifyMap
+from callimportmapimgdialog import QImportMapImgDialog
 
 
 class MainWindow(QMainWindow):

@@ -9,8 +9,6 @@ from .Node import point
 import heapq
 
 
-
-
 class Main:
     def __init__(self, mapdata):
         self.start = point(mapdata.start_point[0], mapdata.start_point[1])
@@ -23,8 +21,6 @@ class Main:
         self.nodes = [self.start, self.end]
         self.edges = []
         self.step = 50
-
-
 
     def dist(self, p1, p2):
         # 两点距离
@@ -175,7 +171,7 @@ class Main:
             pygame.draw.line(plan_surface, (255, 0, 0), (path[i].x, path[i].y), (path[i + 1].x, path[i + 1].y), 2)
 
     def plan(self, plan_surface):
-        start_time=time.time()
+        start_time = time.time()
         # 生成随机点
         while len(self.nodes) < self.max_point_num:
             k = self.generate_random_points()
@@ -194,13 +190,12 @@ class Main:
         # distances = self.dijkstra()
         # self.visualize_path(distances, plan_surface)
         path = self.a_star()
-        end_time=time.time()
-        print("时间为",end_time-start_time)
+        end_time = time.time()
+        print("时间为", end_time - start_time)
         if path is None:
             print("未找到可行路径！！！！")
 
         # for i in path:
         #     print(i)
         self.visualize_path(path, plan_surface)
-        return path,end_time-start_time
-
+        return path, end_time - start_time
