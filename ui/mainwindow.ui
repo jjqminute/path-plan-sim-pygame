@@ -23,6 +23,12 @@
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="PygameWidget" name="pygameWidget" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <property name="minimumSize">
        <size>
         <width>920</width>
@@ -52,8 +58,152 @@
      <height>22</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>文件</string>
+    </property>
+    <addaction name="action_new_window"/>
+    <addaction name="action_open_map_file"/>
+    <addaction name="action_save_map_file"/>
+    <addaction name="action_import_img_map"/>
+    <addaction name="action_export_img_map"/>
+   </widget>
+   <widget class="QMenu" name="menu_obs">
+    <property name="title">
+     <string>障碍物设置</string>
+    </property>
+    <addaction name="action_random_obs"/>
+    <addaction name="action_para_obs"/>
+    <addaction name="action_shape_obs"/>
+   </widget>
+   <widget class="QMenu" name="menu_start_point">
+    <property name="title">
+     <string>起始点设置</string>
+    </property>
+    <addaction name="action_random_start"/>
+    <addaction name="action_input_start"/>
+   </widget>
+   <widget class="QMenu" name="menu_map">
+    <property name="title">
+     <string>地图设置</string>
+    </property>
+    <addaction name="action_clear_map"/>
+    <addaction name="action_rasterize_map"/>
+    <addaction name="action_adjust_grids"/>
+   </widget>
+   <widget class="QMenu" name="menu_path_plan">
+    <property name="title">
+     <string>路径规划</string>
+    </property>
+    <addaction name="action_path_plan"/>
+    <addaction name="action_analyze"/>
+   </widget>
+   <widget class="QMenu" name="menu_about">
+    <property name="title">
+     <string>关于</string>
+    </property>
+    <addaction name="action_exit"/>
+    <addaction name="action_version_info"/>
+    <addaction name="action_user_manual"/>
+   </widget>
+   <addaction name="menu"/>
+   <addaction name="menu_obs"/>
+   <addaction name="menu_start_point"/>
+   <addaction name="menu_map"/>
+   <addaction name="menu_path_plan"/>
+   <addaction name="menu_about"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="action_new_window">
+   <property name="text">
+    <string>新建窗口</string>
+   </property>
+  </action>
+  <action name="action_open_map_file">
+   <property name="text">
+    <string>打开地图文档</string>
+   </property>
+  </action>
+  <action name="action_save_map_file">
+   <property name="text">
+    <string>保存地图文档</string>
+   </property>
+  </action>
+  <action name="action_random_obs">
+   <property name="text">
+    <string>随机障碍物</string>
+   </property>
+  </action>
+  <action name="action_para_obs">
+   <property name="text">
+    <string>参数障碍物</string>
+   </property>
+  </action>
+  <action name="action_shape_obs">
+   <property name="text">
+    <string>图形障碍物</string>
+   </property>
+  </action>
+  <action name="action_random_start">
+   <property name="text">
+    <string>随机起始点</string>
+   </property>
+  </action>
+  <action name="action_input_start">
+   <property name="text">
+    <string>输入起始点</string>
+   </property>
+  </action>
+  <action name="action_clear_map">
+   <property name="text">
+    <string>清空地图</string>
+   </property>
+  </action>
+  <action name="action_adjust_grids">
+   <property name="text">
+    <string>调整栅格</string>
+   </property>
+  </action>
+  <action name="action_path_plan">
+   <property name="text">
+    <string>路径规划</string>
+   </property>
+  </action>
+  <action name="action_analyze">
+   <property name="text">
+    <string>分析规划</string>
+   </property>
+  </action>
+  <action name="action_rasterize_map">
+   <property name="text">
+    <string>栅格化地图</string>
+   </property>
+  </action>
+  <action name="action_exit">
+   <property name="text">
+    <string>退出</string>
+   </property>
+  </action>
+  <action name="action_version_info">
+   <property name="text">
+    <string>版本信息</string>
+   </property>
+  </action>
+  <action name="action_user_manual">
+   <property name="text">
+    <string>帮助手册</string>
+   </property>
+  </action>
+  <action name="action_import_img_map">
+   <property name="text">
+    <string>从图片导入地图</string>
+   </property>
+  </action>
+  <action name="action_export_img_map">
+   <property name="text">
+    <string>导出地图到图片</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>

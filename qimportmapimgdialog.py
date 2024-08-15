@@ -12,6 +12,9 @@ class QImportMapImgDialog(QDialog, Ui_ImportMapImgDialog):
         self.select_file_button.clicked.connect(self.open_file)
 
     def open_file(self):
+        """
+        打开选择文件对话框
+        """
         file_name, file_type = QFileDialog.getOpenFileName(self, "选取文件", os.getcwd(), "Images (*.png *.jpg)")
         self.file_dir_line.setText(file_name)
         print(file_name)

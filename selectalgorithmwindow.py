@@ -14,6 +14,8 @@ from algorithmlist import AlgorithmList
 from mappygame import PygameWidget
 from result import load_demo, Category_Demo, Category_Compare
 
+import algorithms
+
 
 def list_algorithm_modules(folder_path):
     algorithm_modules = []
