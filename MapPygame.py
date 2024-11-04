@@ -1049,7 +1049,7 @@ class PygameWidget(QWidget):
                             break
                     elif shape_type == 5:  # 不规则形状
 
-                        max_radius = random.randrange(15,50)
+                        max_radius = random.randrange(8,80)
                         center = (max_radius, max_radius)
                         points = generate_smooth_blob(center, max_radius)
                         if len(points) >= 3:  # 确保有足够的点数
