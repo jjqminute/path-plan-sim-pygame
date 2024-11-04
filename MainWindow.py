@@ -67,6 +67,10 @@ class Ui_MainWindow(object):
         checkbox5 = QCheckBox("矩形", MainWindow)
         checkbox5.setGeometry(210, 180, 150, 30)  # 设置多选框位置和大小
 
+        # 不规则障碍物
+        checkbox6 = QCheckBox("不规则", MainWindow)
+        checkbox6.setGeometry(280, 180, 150, 30)
+
         # 创建障碍物是否重叠
         label_type = QLabel("障碍物重叠:", MainWindow)
         label_type.setGeometry(60, 210, 80, 30)  # 设置标签位置和大小
@@ -97,7 +101,7 @@ class Ui_MainWindow(object):
                 return
             obstacle_size = slider.value()
             obstacle_types = []
-            if not checkbox1.isChecked() and not checkbox2.isChecked() and not checkbox3.isChecked() and not checkbox4.isChecked() and not checkbox5.isChecked():
+            if not checkbox1.isChecked() and not checkbox2.isChecked() and not checkbox3.isChecked() and not checkbox4.isChecked() and not checkbox5.isChecked()and not checkbox6.isChecked():
                 label_notice.setText("请选择至少一种障碍物类型！")
                 return
             if checkbox1.isChecked():
@@ -110,6 +114,8 @@ class Ui_MainWindow(object):
                 obstacle_types.append(3)
             if checkbox5.isChecked():
                 obstacle_types.append(4)
+            if checkbox6.isChecked():
+                obstacle_types.append(5)
             if not radio_button_ok.isChecked() and not radio_button_no.isChecked():
                 label_notice.setText("请选择障碍物是否重叠！")
                 return
@@ -235,7 +241,7 @@ class Ui_MainWindow(object):
     def select_arithmetic(self, MainWindow, grid_widget):
         self.loginWindow_new = None
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(500, 250)
+        MainWindow.resize(800, 250)
         # 创建选择算法标签
         self.label_analyse = QLabel("选择算法:", MainWindow)
         self.label_analyse.setGeometry(30, 30, 80, 30)  # 设置标签位置和大小
@@ -262,6 +268,14 @@ class Ui_MainWindow(object):
         radio_button_PRM = QRadioButton("PRM", MainWindow)
         radio_button_PRM.setGeometry(370, 30, 80, 30)  # 设置单选按钮位置和大小
         radio_button_group.addButton(radio_button_PRM)
+        #RRTstar
+        radio_button_RRTStar = QRadioButton("RRTStar", MainWindow)
+        radio_button_RRTStar.setGeometry(430, 30, 80, 30)  # 设置单选按钮位置和大小
+        radio_button_group.addButton(radio_button_RRTStar)
+        # BiRRT
+        radio_button_BiRRT = QRadioButton("BiRRT", MainWindow)
+        radio_button_BiRRT.setGeometry(500, 30, 80, 30)  # 设置单选按钮位置和大小
+        radio_button_group.addButton(radio_button_BiRRT)
         # 保存结果部分
         label_result = QLabel("是否保存结果:", MainWindow)
         label_result.setGeometry(30, 60, 80, 30)
@@ -322,7 +336,7 @@ class Ui_MainWindow(object):
         label_notice.setGeometry(80, 210, 150, 30)  # 设置标签位置和大小
 
         def on_button_click():
-            if not radio_button_astar.isChecked() and not radio_button_rrt.isChecked() and not radio_button_apf.isChecked() and not radio_button_RRTapf and not radio_button_PRM:
+            if not radio_button_astar.isChecked() and not radio_button_rrt.isChecked() and not radio_button_apf.isChecked() and not radio_button_RRTapf and not radio_button_PRM and not radio_button_BiRRT and not radio_button_RRTStar:
                 label_notice.setText("请选择规划路径所用算法！")
                 return
             # 检测路径是否合法
@@ -353,6 +367,12 @@ class Ui_MainWindow(object):
                 elif radio_button_PRM.isChecked():
                     obstacle_overlap = "PRM"
                     track, time = grid_widget.startPRm()
+                elif radio_button_RRTStar.isChecked():
+                    obstacle_overlap = "RRTStar"
+                    track, time = grid_widget.startRRTStar()
+                elif radio_button_BiRRT.isChecked():
+                    obstacle_overlap = "BiRRT"
+                    track, time = grid_widget.startBiRRT()
                 label_notice.setText("正在规划路径！")
                 # 保存结果部分
                 if radio_button_result_true.isChecked():
@@ -502,6 +522,7 @@ class Ui_MainWindow(object):
         label_smoothness = QLabel("路径平滑度是：" + str(r.smoothness), MainWindow)
         label_path_length = QLabel("路径长度是：" + str(r.pathlen), MainWindow)
         button_smoothness = QPushButton("展示曲率")
+
         def on_button_click():
             new_window = QtWidgets.QMainWindow()
             curvature = r.draw_curvature()
@@ -510,12 +531,23 @@ class Ui_MainWindow(object):
             new_window.show()
             self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
         button_smoothness.clicked.connect(on_button_click)
+
+        button_save = QPushButton("保存图片")
+
+        def on_save_button_click():
+            file_path, _ = QFileDialog.getSaveFileName(MainWindow, "保存图片", "",
+                                                       "PNG Files (*.png);;JPEG Files (*.jpg)")
+            if file_path:
+                canvas.grab().save(file_path)
+
+        button_save.clicked.connect(on_save_button_click)
         layout = QVBoxLayout()
         layout.addWidget(canvas)
         layout.addWidget(label_smoothness)
         layout.addWidget(label_path_length)
         layout.addWidget(label_time)
         layout.addWidget(button_smoothness)
+        layout.addWidget(button_save)
         main_widget = QWidget(MainWindow)
         main_widget.setLayout(layout)
         MainWindow.setCentralWidget(main_widget)

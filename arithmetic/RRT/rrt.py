@@ -18,6 +18,7 @@ class Rrt:
         self.tree = []
         self.step = 10
         self.max_iterations = 10000
+        self.node_count = 0
 
     def rand_point(self):
         x = random() * self.width
@@ -177,9 +178,9 @@ class Rrt:
         for _ in range(max_iterations):
             # 1. 扩展树，添加一个新节点
             new_node = self.expand(tree, max_distance)
-
+            self.node_count+=1
             # 2. 检查是否达到目标点
-            if new_node and self.is_goal_reached(new_node, (self.end.x, self.end.y), max_distance):
+            if new_node and self.is_goal_reached(new_node, (self.end.x, self.end.y), 20):
                 # 如果达到目标，则构建并返回路径
                 path = [new_node]
                 current_node = new_node
@@ -205,6 +206,8 @@ class Rrt:
                 end = time.time()
                 print("花费时间为")
                 print(end - start)
+                print("总节点数为")
+                print(self.node_count)
                 return path, end - start
 
             # 绘制过程中的点和线

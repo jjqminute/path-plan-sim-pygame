@@ -21,30 +21,50 @@ class APFRRT():
         self.width = mapdata.width
         self.height = mapdata.height
         self.obstacles = mapdata.obstacles  # 多边形障碍物顶点
-        #全局障碍物信息
+        # 全局障碍物信息
         self.obstacle = mapdata.obs_surface
         # APF参数
         self.attraction_coeff = 5.0  # 吸引力系数
         self.repulsion_coeff = 5000.0  # 斥力系数
-        self.repulsion_threshold = 200  # 斥力作用距离阈值
+        self.repulsion_threshold = 60  # 斥力作用距离阈值
         # 检测震荡参数
         self.position_history = []  # 用于存储历史位置的列表
-        self.history_size = 100  # 检测震荡时的点是否大于这个值
+        self.history_size = 0  # 检测震荡时的点是否大于这个值
         self.oscillation_detection_threshold = 3  # 震荡检测阈值
         # RRT参数
-        #self.step = 10
+        # self.step = 10
         self.tree = []
-        self.step = 15
-        #最大迭代次数
+        self.step = 10
+        # 最大迭代次数
         self.max_iterations = 10000
-        #动态调整参数
-        self.falsecount=0
+        # 动态调整参数
+        self.falsecount = 0
+        self.flag=8
+
+        #节点数目
+        self.node_count = 0
 
     def distance(self, point1, point2):
         # 计算两点直接的距离
         return math.sqrt((point1.x - point2.x) ** 2 + (point1.y - point2.y) ** 2)
 
+    # 动态调整吸引力
+    def update_attraction_coeff(self, current_point):
+        distance_to_goal = self.distance(current_point, self.end)
+        total_distance = self.distance(self.start, self.end)
+        ratio = distance_to_goal / total_distance
+        self.attraction_coeff = self.attraction_coeff + (30 - self.attraction_coeff) * (1 - ratio)
+
+    # 动态调整斥力
+    def update_repulsion_coeff(self, current_point):
+        distance_to_goal = self.distance(current_point, self.end)
+        total_distance = self.distance(self.start, self.end)
+        ratio = distance_to_goal / total_distance
+        self.repulsion_coeff = 5000 * ratio
+
     def calculate_gradient(self, current_point):
+        # 动态调整引力系数
+        self.update_attraction_coeff(current_point)
         # 根据人工势场计算当前位置的梯度向量
         dx = self.end.x - current_point.x
         dy = self.end.y - current_point.y
@@ -57,6 +77,8 @@ class APFRRT():
         return gradient_x, gradient_y
 
     def calculate_repulsion(self, current_point):
+        # 动态调整斥力系数
+        self.update_repulsion_coeff(current_point)
         # 根据障碍物斥力计算当前位置的斥力向量
         force_x = force_y = 0.0
         closest_distance = float('inf')  # 初始化最近距离为无穷大
@@ -71,9 +93,10 @@ class APFRRT():
             nearest_pt = nearest_points(pos, obs)[1]
             # 计算障碍物距离
             distance_to_obstacle = pos.distance(obs)
-            force=0
+            force = 0
             # 如果距离小于障碍物影响范围
             if distance_to_obstacle < self.repulsion_threshold:
+
                 if distance_to_obstacle < closest_distance:
                     closest_distance = distance_to_obstacle
                 # 计算机器人当前位置指向障碍物边界的单位向量
@@ -84,7 +107,7 @@ class APFRRT():
                     dx /= distance
                     dy /= distance
                     force = self.repulsion_coeff * (1.0 / distance_to_obstacle - 1.0 / self.repulsion_threshold) / (
-                        distance_to_obstacle ** 2)
+                            distance_to_obstacle ** 2)
                 # 计算斥力的大小
                 else:
                     force_x -= 0
@@ -93,10 +116,12 @@ class APFRRT():
                 # 累积斥力的分量
                 force_x -= force * dx
                 force_y -= force * dy
-        # if closest_distance < 20:
-        #     self.step = max(8, self.step-1)  # 举例：减小步长
-        # else:
-        #     self.step = min(20, self.step + 5)  # 举例：增加步长
+        if closest_distance < 60:
+            self.repulsion_coeff += 6000 * (60-closest_distance)/(60-20)
+            self.step = max(5, self.step - 1)  # 举例：减小步长
+
+        else:
+            self.step = min(40, self.step + 5)  # 举例：增加步长
         return force_x, force_y
 
     def rand_point(self, current_point):
@@ -108,41 +133,52 @@ class APFRRT():
         total_force_x = gradient_x + repulsion_x
         total_force_y = gradient_y + repulsion_y
 
-        #print ("合力为：")
-        #print (total_force_x, total_force_y)
+        # print ("合力为：")
+        # print (total_force_x, total_force_y)
         # 计算随机点的偏移量
         magnitude = math.sqrt(total_force_x ** 2 + total_force_y ** 2)
-        if magnitude > 0 and (total_force_x >1or total_force_y >1):
+        if magnitude > 0 and (total_force_x > 1 or total_force_y > 1):
             # 根据势场和斥力的合力方向调整随机点的偏移量
-            offset_factor = 1.2
-            #随机性更强
-            #random_x = (current_point.x + offset_factor * total_force_x * random.uniform(0.5, 1.0))*self.step*0.2
-            #random_y = (current_point.y + offset_factor * total_force_y * random.uniform(0.5, 1.0))*self.step*0.2
-            #APF步长更大
-            random_x = (current_point.x + offset_factor * total_force_x *self.step*0.1*random.uniform(0.5, 1.0))
-            random_y = (current_point.y + offset_factor * total_force_y *self.step*0.1*random.uniform(0.5, 1.0))
-            #random_x = (current_point.x + offset_factor * total_force_x * random.uniform(0.5, 1.0))
-            #random_y = (current_point.y + offset_factor * total_force_y * random.uniform(0.5, 1.0))
+            offset_factor = 0.8
+            # APF步长更大
+            random_x = (current_point.x + offset_factor * total_force_x * self.step * 0.15 * random.uniform(0.5, 1.0))
+            random_y = (current_point.y + offset_factor * total_force_y * self.step * 0.15* random.uniform(0.5, 1.0))
         # 如果即将或已陷入局部极小值
         else:
-            self.falsecount+=1
-            #如果尝使的次数变多，增加步长
-            # if(self.falsecount>=5):
-            #     self.step+=5
-            #     self.falsecount=0
+            self.falsecount += 1
+            # 如果尝使的次数变多，增加步长
+            if (self.falsecount >= 5):
+                self.step += 5
+                self.flag+=0.2
+                self.falsecount = 0
 
             # 如果合力为0，随机选择一个点
-            random_x = random.uniform(0,self.width)
-            random_y = random.uniform(0,self.height)
-        if self.collision((current_point.x,current_point.y),(random_x,random_y)):
-            print ("随机点")
+            random_x = random.uniform(0, self.width)
+            random_y = random.uniform(0, self.height)
+        if self.collision((current_point.x, current_point.y), (random_x, random_y)) or self.history_size>=2:
+            print("随机点")
             self.falsecount += 1
-            random_x ,random_y = self.random_nodes()
+            self.history_size=0
+            q=0.4
+            r=random.uniform(0,1)
+            if(r>q):
+
+                random_x, random_y = self.random_nodes(current_point,self.flag)
+            else:
+                random_x = random.uniform(0, self.width)
+                random_y = random.uniform(0, self.height)
+
         return point(random_x, random_y)
-    def random_nodes(self):
-        random_x = random.uniform(self.width-self.end.x, self.width)
-        random_y = random.uniform(0, self.height)
+
+    def random_nodes(self, current_point,flag):
+        radius = self.step * flag # 定义随机点的半径范围
+        angle = random.uniform(0, 2 * math.pi)
+        random_x = current_point.x + radius * math.cos(angle)
+        random_y = current_point.y + radius * math.sin(angle)
+        random_x = max(0, min(self.width, random_x))  # 确保随机点在界内
+        random_y = max(0, min(self.height, random_y))  # 确保随机点在界内
         return random_x, random_y
+
     def nearest_neighbor(self, tree, target_point):
         """
         在树中寻找最接近目标点的节点。
@@ -236,19 +272,24 @@ class APFRRT():
         Returns:
         - new_node: 添加到树中的新节点，如果扩展失败则返回None。
         """
-        current_node =tree[-1]
+        current_node = tree[-1]
         # 1. 随机抽样一个点
         random_point = self.rand_point(current_node)
-
         # 2. 找到树中距离随机点最近的节点
         nearest_node = self.nearest_neighbor(tree, (random_point.x, random_point.y))
-
         # 3. 从最近节点向随机点扩展
         new_node = self.steer(nearest_node, (random_point.x, random_point.y), max_distance)
         new_node.father = nearest_node
         # 4. 检查是否与障碍物发生碰撞
-        if not self.collision((nearest_node.x, nearest_node.y), (new_node.x, new_node.y)):
+        while self.collision((nearest_node.x, nearest_node.y), (new_node.x, new_node.y)):
+            random_point = self.rand_point(current_node)
+            # 2. 找到树中距离随机点最近的节点
+            nearest_node = self.nearest_neighbor(tree, (random_point.x, random_point.y))
+            # 3. 从最近节点向随机点扩展
+            new_node = self.steer(nearest_node, (random_point.x, random_point.y), max_distance)
+            new_node.father = nearest_node
             # 如果没有碰撞，则将新节点添加到树中
+        if not self.collision((nearest_node.x, nearest_node.y), (new_node.x, new_node.y)):
             tree.append(new_node)
             return new_node
         else:
@@ -270,20 +311,23 @@ class APFRRT():
             """
         vx, vy = self.normalize(dst[0] - src[0], dst[1] - src[1])
         curr = list(src)
-        if curr[0]<0 or curr[0]>=self.width or curr[1]<0 or curr[1]>=self.height:
+        if curr[0] < 0 or curr[0] >= self.width or curr[1] < 0 or curr[1] >= self.height:
             return True
         while self.dist(curr, dst) > 1:
             int_curr = int(curr[0]), int(curr[1])
             if int_curr[0] < 0 or int_curr[0] >= self.width or int_curr[1] < 0 or int_curr[1] >= self.height:
                 return True
             if self.obstacle.get_at(int_curr) == (0, 0, 0):
+                self.history_size+=1
+                print(int_curr[0], int_curr[1])
                 print("障碍物！！！！！！！！！！！！")
+                self.repulsion_coeff+=50
                 return True
             curr[0] += vx
             curr[1] += vy
         return False
 
-    def cubic_bezier(self,p0, p1, p2, p3, t):
+    def cubic_bezier(self, p0, p1, p2, p3, t):
         """
         计算三次贝塞尔曲线上的一个点。
         """
@@ -291,7 +335,7 @@ class APFRRT():
         y = (1 - t) ** 3 * p0.y + 3 * (1 - t) ** 2 * t * p1.y + 3 * (1 - t) * t ** 2 * p2.y + t ** 3 * p3.y
         return point(x, y)
 
-    def smooth_path_bezier(self,original_path, num_points=100):
+    def smooth_path_bezier(self, original_path, num_points=100):
         """
         对给定路径应用三次贝塞尔曲线平滑。
         """
@@ -328,10 +372,12 @@ class APFRRT():
         # 执行 RRT 迭代
         for i in range(max_iterations):
             # 1. 扩展树，添加一个新节点
-            if i == max_iterations-1:
+            if i == max_iterations - 1:
                 print("Maximum达到迭代上限！！！！！！")
                 break
             new_node = self.expand(tree, max_distance)
+            # 计算节点数目
+            self.node_count += 1
             current_node = new_node
             if current_node:
                 pygame.draw.circle(plan_surface, (0, 100, 255), (current_node.x, current_node.y), 2)
@@ -342,17 +388,19 @@ class APFRRT():
                 path = [self.end]  # 确保路径以目标点结束
 
                 while current_node is not None:
+
                     path.append(current_node)
                     pygame.draw.line(plan_surface, (255, 0, 0), (current_node.x, current_node.y),
                                      (current_node.x, current_node.y), 4)
                     current_node = current_node.father
-
 
                 path.append(self.start)  # 确保路径以起始点开始
                 path.reverse()
                 middtimer = time.time()
                 print("路径规划花费时间为")
                 print(middtimer - start)
+                print("总节点数为")
+                print(self.node_count)
                 smoothed_path = self.smooth_path_bezier(path, 100)
                 smoothed_path.append(self.end)
                 for k in smoothed_path:
@@ -383,7 +431,7 @@ class APFRRT():
                 end = time.time()
                 print("总花费时间为")
                 print(end - start)
-                return path,middtimer - start
+                return path,middtimer-start
 
             # 绘制过程中的点和线
             if new_node:
@@ -391,7 +439,7 @@ class APFRRT():
                 pygame.draw.line(plan_surface, (0, 100, 255), (new_node.father.x, new_node.father.y),
                                  (new_node.x, new_node.y), 2)
                 QApplication.processEvents()  # 强制Qt处理事件队列（重绘）
+        end=time.time()
         # 如果最大迭代次数后仍未找到路径，则返回空路径
         print("未找到路径！！！")
-        endtime=time.time()
-        return [],start-endtime
+        return [],end-start

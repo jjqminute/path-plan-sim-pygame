@@ -2,7 +2,8 @@ import math
 import re
 import sys
 import time
-
+from noise import pnoise2
+import numpy as np
 import pygame
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QFileDialog
 from PyQt5.QtWidgets import QFrame
@@ -21,10 +22,12 @@ import geopandas as gpd
 from shapely.geometry import Point, MultiPoint, shape
 import cv2
 import numpy
-
+from scipy.interpolate import splprep, splev
 from arithmetic.APF.apf import apf
 from arithmetic.Astar.Map import Map
 from arithmetic.Astar.astar import astar
+from arithmetic.RRT.BiRRT import BiRrt
+from arithmetic.RRT.RRTstar import RrtStar
 from arithmetic.RRT.rrt import Rrt
 
 from result import Result_Demo
@@ -32,6 +35,7 @@ from result import Result_Demo
 from arithmetic.RRT.rrt import Rrt
 from arithmetic.APFRRT.APFRRT import APFRRT
 from arithmetic.PRM.prm import prm
+
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
@@ -213,12 +217,13 @@ class PygameWidget(QWidget):
 
     # RRT算法
     def startRtt(self):
+        self.plan_surface.fill(self.back_color)
         self.result = None
         self.search = Rrt(self)
         self.result, time1 = self.search.plan(self.plan_surface)
         if self.result is not None:
             for k in self.result:
-                pygame.draw.circle(self.plan_surface,(0,100,255),(k.x,k.y),3)
+                pygame.draw.circle(self.plan_surface, (0, 100, 255), (k.x, k.y), 3)
         if self.result is not None:
             for k in range(len(self.result) - 1):
                 pygame.draw.line(self.plan_surface, (0, 100, 255), (self.result[k].x, self.result[k].y),
@@ -230,22 +235,47 @@ class PygameWidget(QWidget):
             track.append((x, y))
         # self.save_result(time1,track)
         return track, time1
-
+    def startRRTStar(self):
+        self.plan_surface.fill(self.back_color)
+        self.result = None
+        self.search = RrtStar(self)
+        self.result, time = self.search.plan(self.plan_surface)
+        track = []
+        for point in self.result:
+            x = point.x
+            y = point.y
+            track.append((x, y))
+        return track, time
+    def startBiRRT(self):
+        self.plan_surface.fill(self.back_color)
+        self.result = None
+        self.search = BiRrt(self)
+        self.result, time = self.search.plan(self.plan_surface)
+        if self.result is not None:
+            for k in range(len(self.result) - 1):
+                pygame.draw.line(self.plan_surface, (0, 100, 255), (self.result[k].x, self.result[k].y),
+                                 (self.result[k + 1].x, self.result[k + 1].y), 3)
+        track = []
+        for point in self.result:
+            x = point.x
+            y = point.y
+            #print(x,y);
+            track.append((x, y))
+        return track, time
     def startApf(self):
+        self.plan_surface.fill(self.back_color)
         self.result = None
         self.search = apf(self)
-        self.result, time1 = self.search.plan(self.plan_surface)
-        if self.result is not None:
-            for k in self.result:
-                pygame.draw.circle(self.plan_surface, (0, 100, 255), (k[0], k[1]), 3)
-            for k in range(len(self.result) - 1):
-                pygame.draw.line(self.plan_surface, (0, 100, 255), (self.result[k][0], self.result[k][1]),
-                                 (self.result[k + 1][0], self.result[k + 1][1]), 3)
-        # self.save_result(time1, self.result)
-        return self.result,time1
+        self.result, time = self.search.plan(self.plan_surface)
+        track = []
+        for point in self.result[:-1]:
+            track.append((point[0], point[1]))
+        return track, time
+
     def startApfRrt(self):
+        self.plan_surface.fill(self.back_color)
         self.result = None
-        self.result,time = APFRRT(self).plan(self.plan_surface)
+        self.result, time = APFRRT(self).plan(self.plan_surface)
         track = []
         for point in self.result[:-1]:
             track.append((point.x, point.y))
@@ -253,7 +283,7 @@ class PygameWidget(QWidget):
 
     def startPRm(self):
         self.result = None
-        self.result,time = prm(self).plan(self.plan_surface)
+        self.result, time = prm(self).plan(self.plan_surface)
         track = []
         for point in self.result[:-1]:
             track.append((point.x, point.y))
@@ -313,7 +343,6 @@ class PygameWidget(QWidget):
         with open(file_path, 'w') as file:
             file.write(geojson_str)
         self.main_window.printf("地图和结果数据已成功保存！", None, None)
-
 
     # 保存地图文件
     def save_map(self):
@@ -604,7 +633,7 @@ class PygameWidget(QWidget):
     # 画起始点
     def painting_ori(self, x, y):
         # 输入新的起始点需要判断是否在之前已经生成起始点了，生成起始点就需要将原来的擦除以及self。start_point换成新的值
-        if(self.start_point != None):
+        if (self.start_point != None):
             pygame.draw.circle(self.obs_surface, (255, 255, 255), self.start_point, self.obs_radius)
             self.start_point = None
         self.start_point = (x, y)
@@ -657,7 +686,8 @@ class PygameWidget(QWidget):
                 else:
                     self.main_window.printf("请输入正确的分辨率！", None, None)
         else:
-            self.main_window.printf("当前地图已起始点或障碍点不可调整地图分辨率，请清空地图后再次调整分辨率！", None, None)
+            self.main_window.printf("当前地图已起始点或障碍点不可调整地图分辨率，请清空地图后再次调整分辨率！", None,
+                                    None)
 
     # 随机起始点方法[Ok]
     def generateRandomStart(self):
@@ -763,7 +793,7 @@ class PygameWidget(QWidget):
         # return contours
 
     # 随机图形障碍物
-    def paint_random_one(self,current_index):
+    def paint_random_one(self, current_index):
         if current_index == 1:
             pygame.draw.rect(self.obs_surface, BLACK, (100, 100, self.rect_size, self.rect_size))
         elif current_index == 2:
@@ -953,7 +983,7 @@ class PygameWidget(QWidget):
         return obstacles
 
     # 根据参数生成障碍物
-    def graph_setting(self,quantity, size, types, overlap):
+    def graph_setting(self, quantity, size, types, overlap):
         self.clear_map()  # 重置地图
         obstacles = []
         max_retries = 200  # 障碍物最大寻址次数，保证每个障碍物不重叠
@@ -967,6 +997,27 @@ class PygameWidget(QWidget):
                         return True
                 return False
 
+            # 生成不规则障碍物
+
+            def generate_smooth_blob(center, max_radius, irregularity=0.1, spikeyness=0.1, num_vertices=20):
+                angle_steps = np.linspace(0, 2 * np.pi, num_vertices, endpoint=False)
+                angle_steps += np.random.normal(0, irregularity, num_vertices)
+
+                points = []
+                for angle in angle_steps:
+                    radius = max_radius * (1 + np.random.uniform(-spikeyness, spikeyness))
+                    x = center[0] + radius * np.cos(angle)
+                    y = center[1] + radius * np.sin(angle)
+                    points.append((x, y))
+
+                points.append(points[0])  # Closing the loop
+
+                points = np.array(points)
+                tck, u = splprep([points[:, 0], points[:, 1]], s=0.5, per=True)
+                u_new = np.linspace(u.min(), u.max(), 100)
+                x_new, y_new = splev(u_new, tck, der=0)
+
+                return list(zip(x_new, y_new))
             # 根据用户输入的数量输出障碍物
             for _ in range(int(quantity)):
                 retries = 0
@@ -993,7 +1044,7 @@ class PygameWidget(QWidget):
                     # 添加椭圆形障碍物生成逻辑
                     elif shape_type == 2:
                         width = int(size)
-                        height = int(size)//2
+                        height = int(size) // 2
                         x = random.randrange(0, self.width - width)
                         y = random.randrange(0, self.height - height)
                         if not is_overlapping(x, y, width, height):
@@ -1022,10 +1073,28 @@ class PygameWidget(QWidget):
                             obstacles.append((x, y, width, height))
                             pygame.draw.rect(self.obs_surface, self.obs_color, (x, y, width, height))
                             break
+                    elif shape_type == 5:  # 不规则形状
+                        max_radius = random.randrange(15,50)
+                        center = (max_radius, max_radius)
+                        points = generate_smooth_blob(center, max_radius)
+                        if len(points) >= 3:  # 确保有足够的点数
+                            offset_x = random.randrange(0, self.width - int(size))
+                            offset_y = random.randrange(0, self.height - int(size))
+                            points = [(x + offset_x, y + offset_y) for x, y in points]
+                            bounding_box = pygame.Rect(min(x for x, y in points), min(y for x, y in points),
+                                                       max(x for x, y in points) - min(x for x, y in points),
+                                                       max(y for x, y in points) - min(y for x, y in points))
+                            if not is_overlapping(bounding_box.left, bounding_box.top, bounding_box.width,
+                                                  bounding_box.height):
+                                obstacles.append(
+                                    (bounding_box.left, bounding_box.top, bounding_box.width, bounding_box.height))
+                                pygame.draw.polygon(self.obs_surface, self.obs_color, points)
+                                break
                     retries += 1
 
 
         elif overlap == "T":  # 重叠障碍物
+
             for _ in range(int(quantity)):
                 shape_type = random.choice(my_array)  # 0表示圆形，1表示矩形
                 if shape_type == 0:
@@ -1043,7 +1112,7 @@ class PygameWidget(QWidget):
                 elif shape_type == 2:
                     # 绘制椭圆
                     width = int(size)
-                    height = int(size)//2
+                    height = int(size) // 2
                     x = random.randrange(0, self.width - width)
                     y = random.randrange(0, self.height - height)
                     pygame.draw.ellipse(self.obs_surface, self.obs_color, (x, y, width, height))
@@ -1057,12 +1126,11 @@ class PygameWidget(QWidget):
                     pygame.draw.polygon(self.obs_surface, self.obs_color, diamond_points)
                 elif shape_type == 4:
                     width = int(size)
-                    height = int(size)//2
+                    height = int(size) // 2
                     color = (random.randrange(256), random.randrange(256), random.randrange(256))
                     x = random.randrange(0, self.width - width)
                     y = random.randrange(0, self.height - height)
                     pygame.draw.rect(self.obs_surface, self.obs_color, (x, y, width, height))
-
         self.get_obs_vertices()
         return obstacles
 

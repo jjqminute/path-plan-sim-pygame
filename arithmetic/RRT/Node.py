@@ -1,3 +1,6 @@
+import copy
+
+
 class point:  # 点类（每一个唯一坐标只有对应的一个实例）
     _list = []  # 储存所有的point类实例
     _tag = True  # 标记最新创建的实例是否为_list中的已有的实例，True表示不是已有实例
@@ -32,3 +35,11 @@ class point:  # 点类（每一个唯一坐标只有对应的一个实例）
     def __str__(self):
         return '(%d,%d)[father:(%s)]' % (self.x, self.y,  str(
             (self.father.x, self.father.y)) if self.father != None else 'null')
+
+    def __deepcopy__(self, memo):
+        new_node = point(self.x, self.y)
+        new_node.father = copy.deepcopy(self.father, memo)
+        return new_node
+
+    def __hash__(self):
+        return hash((self.x, self.y))

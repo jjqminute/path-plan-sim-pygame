@@ -11,7 +11,7 @@ from geojson import Feature, FeatureCollection
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from shapely import Polygon, Point
 
-
+import re
 def load_demo(file_name):
     """
     加载result_demo(路径规划问题结果类)
@@ -20,7 +20,13 @@ def load_demo(file_name):
     """
     with open(file_name, 'r') as file:
         geojson_str = file.read()
-    geojson_obj = geojson.loads(geojson_str)
+        # 替换字符串中的NaN为null
+    geojson_str = re.sub(r'NaN', 'null', geojson_str)
+    try:
+        geojson_obj = geojson.loads(geojson_str)
+    except ValueError as e:
+        print(f"Error loading GeoJSON: {e}")
+        return None  # 或者根据需要进行其他错误处理
     obstacles = []
     for feature in geojson_obj['features']:
         geometry = feature['geometry']
@@ -110,13 +116,28 @@ class Result_Demo:
     # -----------------------计算路径平滑度-----------------------------------
     def compute_curvature(self, x, y):
         """计算曲率"""
-        # 计算每个点前后两点之间的斜率
         slopes = np.diff(y) / np.diff(x)
 
         # 计算曲率，这里使用曲率的定义 k = |dy/dx| / (1 + (dy/dx)^2)^(3/2)
         curvature = np.abs(slopes) / np.sqrt(1 + slopes ** 2)
         return curvature
 
+    def compute_linearity(self,x, y):
+        # 计算起点到终点的直线距离
+        start_point = np.array([x[0], y[0]])
+        end_point = np.array([x[-1], y[-1]])
+        straight_line_distance = np.linalg.norm(end_point - start_point)
+
+        # 计算路径的总长度
+        path_length = np.sum(np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2))
+
+        # 线性度，即路径长度与直线距离的比值
+        linearity = straight_line_distance / path_length
+        print(linearity)
+        # 平滑度为线性度的补数，1 - linearity
+        smoothness = 1 - linearity
+
+        return smoothness
     def compute_smoothness(self):
         """计算路径平滑度"""
         path_x = [x for (x, y) in self.track]
@@ -126,8 +147,7 @@ class Result_Demo:
 
         # 计算平均曲率作为路径平滑度的指标
         average_curvature = np.mean(curvature)
-        self.smoothness = average_curvature
-
+        self.smoothness = round(average_curvature, 2)
     def draw_curvature(self):
         # 绘制曲率
         figure = plt.figure()
@@ -245,11 +265,18 @@ class Category_Demo:
         self.results[0].draw_start()
         plt.gca().invert_yaxis()
         plt.gca().xaxis.tick_top()  # 将x轴刻度显示在上方
-        for r, n in zip(self.results, self.file_name):
+        # 定义颜色和线型列表
+        colors = ['b', 'orangered', 'g', 'm', 'm', 'r', 'k']  # 颜色列表，例如：蓝、绿、红、青、品红、黄、黑
+        line_styles = ['--', '-', '-.', ':']  # 线型列表，例如：实线、虚线、点划线、点线
+        for i, (r, n) in enumerate(zip(self.results, self.file_name)):
+            if n.endswith('.txt'):
+                n = n[:-4]  # 去除最后四个字符
             a = [x for (x, y) in r.track]
             b = [y for (x, y) in r.track]
-            plt.plot(a, b, label=n)
-        plt.legend(loc='upper right')
+
+            # 绘制路径，使用不同的颜色和线型
+            plt.plot(a, b, label=n, color=colors[i % len(colors)], linestyle=line_styles[i % len(line_styles)])
+        plt.legend(loc='upper left')
         return FigureCanvas(figure)
 
     def calculate(self):
