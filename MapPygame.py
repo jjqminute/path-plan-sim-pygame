@@ -19,10 +19,13 @@ import shapely.geometry
 from geojson import Point, Feature, FeatureCollection
 from collections import defaultdict
 import geopandas as gpd
+from shapely import Polygon
 from shapely.geometry import Point, MultiPoint, shape
 import cv2
 import numpy
 from scipy.interpolate import splprep, splev
+
+from DynamicObstacle import DynamicObstacle
 from arithmetic.APF.apf import apf
 from arithmetic.Astar.Map import Map
 from arithmetic.Astar.astar import astar
@@ -38,7 +41,7 @@ from arithmetic.PRM.prm import prm
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-
+RED=(255,0,0)
 
 def surface_to_cv_bgr(surface: pygame.Surface) -> cv2.typing.MatLike:
     """
@@ -81,6 +84,7 @@ def draw_line(surface, color, start_pos, end_pos, radius):
 class PygameWidget(QWidget):
     BACK_COLOR = WHITE
     OBS_COLOR = BLACK
+    DYN_ObsColor = RED
     OBS_RADIUS = 5
     POINT_RADIUS = 5
     WIDTH = 920
@@ -91,6 +95,7 @@ class PygameWidget(QWidget):
         super(PygameWidget, self).__init__(parent)
 
         # 初始化pygame
+
         pygame.init()
 
         # 设置窗口大小
@@ -112,6 +117,7 @@ class PygameWidget(QWidget):
         # 设置主平面，障碍物平面，路径规划平面和起点终点平面
         self.surface = pygame.Surface((self.width, self.height))
         self.obs_surface = pygame.Surface((self.width, self.height))
+        self.dynamic_surface = pygame.Surface((self.width, self.height))
         self.plan_surface = pygame.Surface((self.width, self.height))
         self.point_surface = pygame.Surface((self.width, self.height))
 
@@ -119,12 +125,15 @@ class PygameWidget(QWidget):
 
         # 设置障碍物平面和路径规划平面的透明色
         self.obs_surface.set_colorkey(self.back_color)
+        self.dynamic_surface.set_colorkey(self.back_color)
         self.plan_surface.set_colorkey(self.back_color)
         self.point_surface.set_colorkey(self.back_color)
 
         self.grid_surface.set_colorkey(self.back_color)
 
         self.obs_surface.fill(self.back_color)
+        self.dynamic_surface.fill(self.back_color)  # 用全透明颜色填充
+
         self.plan_surface.fill(self.back_color)
         self.point_surface.fill(self.back_color)
 
@@ -136,8 +145,25 @@ class PygameWidget(QWidget):
         # 初始化多边形轮廓存储的障碍物列表，每个障碍物是一个包含其所有顶点的列表
         self.obstacles = []
 
-        # # 障碍物列表
-        # self.block_map = []
+        #初始化动态障碍物列表
+        self.dynamic_obstacles = []
+
+        # 路径规划算法
+
+        # self.map = Map(self.width, self.height, self.cell_size)
+        # self.apf = apf(self.map)
+        # self.astar = astar(self.map)
+        # self.bi_rrt = BiRrt(self.map)
+        # self.rrt_star = RrtStar(self.map)
+        # self.rrt = Rrt(self.map)
+        # self.apf_rrt = APFRRT(self.map)
+        # self.prm = prm(self.map)
+
+        # 路径规划结果
+        self.result = None
+
+        # 计数器
+        self.count = 0
 
         # 地图列表
         self.cols = self.width // self.cell_size
@@ -395,6 +421,108 @@ class PygameWidget(QWidget):
         # 关闭文件保存对话框
         # self.win_main.quit()
 
+    def update_dynamic_obstacles(self):
+        """
+        更新动态障碍物位置，检测碰撞并处理反弹。
+        """
+        for obstacle in self.dynamic_obstacles:
+            # 更新位置
+            dx, dy = obstacle.direction
+            x, y = obstacle.position
+            new_x, new_y = x + dx * obstacle.speed, y + dy * obstacle.speed
+
+            # 临时更新位置用于碰撞检测
+            obstacle.position = (new_x, new_y)
+            dynamic_polygon = Polygon(obstacle.to_polygon())
+
+            # 检测与边界碰撞
+            if new_x - obstacle.size < 0 or new_x + obstacle.size > self.width:
+                obstacle.direction = (-dx, dy)  # 水平方向反弹
+                obstacle.position = (x, y)  # 恢复位置
+                continue
+
+            if new_y - obstacle.size < 0 or new_y + obstacle.size > self.height:
+                obstacle.direction = (dx, -dy)  # 垂直方向反弹
+                obstacle.position = (x, y)  # 恢复位置
+                continue
+
+            # 检测与静态障碍物碰撞
+            collision = False
+            for static_obstacle in self.obstacles:
+                static_polygon = Polygon(static_obstacle)
+                if dynamic_polygon.intersects(static_polygon):
+                    collision = True
+                    break
+
+            if collision:
+                # 如果碰撞，反弹方向并恢复到原位置
+                obstacle.direction = (-dx, -dy)
+                obstacle.position = (x, y)
+            else:
+                # 如果无碰撞，则保持新位置
+                obstacle.position = (new_x, new_y)
+
+    def draw_dynamic_obstacles(self):
+        """
+        绘制动态障碍物到动态障碍物表面。
+        """
+        # 清空动态障碍物表面
+        #self.dynamic_surface.fill((0, 0, 0, 0))  # 透明背景
+        self.dynamic_surface.fill(self.back_color)
+
+        # 绘制每个动态障碍物
+        for obstacle in self.dynamic_obstacles:
+            x, y = obstacle.position
+            if obstacle.shape == "圆形":
+                # 绘制圆形障碍物
+                pygame.draw.circle(self.dynamic_surface, PygameWidget.DYN_ObsColor, (int(x), int(y)),
+                                   int(obstacle.size))
+            elif obstacle.shape == "正方形":
+                # 绘制正方形障碍物
+                half_size = obstacle.size / 2
+                points = [
+                    (x - half_size, y - half_size),
+                    (x + half_size, y - half_size),
+                    (x + half_size, y + half_size),
+                    (x - half_size, y + half_size)
+                ]
+                pygame.draw.polygon(self.dynamic_surface, PygameWidget.DYN_ObsColor, points)
+            else:
+                raise ValueError(f"未知动态障碍物形状: {obstacle.shape}")
+
+    #创建动态障碍物定义，并加入列表中
+    def create_dynamic_obstacle(self, x, y, shape, direction, speed):
+        # 创建障碍物图形（可以使用 QLabel 模拟）
+        # 定义运动方向（dx, dy）
+        direction_map = {"向上": (0, -1), "向下": (0, 1), "向左": (-1, 0), "向右": (1, 0)}
+        dx, dy = direction_map[direction]
+        self.dynamic_obstacles.append(DynamicObstacle(
+            shape,
+            (x, y),
+            (dx,dy),  # 水平方向
+            speed,
+            20
+        ))
+        #self.draw_dynamic_obstacles()
+
+
+
+    # def move_obstacle(self, grid_widget, obstacle, dx, dy, speed):
+    #     # 获取障碍物当前位置
+    #     current_x = obstacle.x()
+    #     current_y = obstacle.y()
+    #
+    #     # 更新位置
+    #     new_x = current_x + dx * speed
+    #     new_y = current_y + dy * speed
+    #     grid_widget.dynamic_collision(new_x, new_y)
+    #     # # 检测边界碰撞
+    #     # if new_x < 0 or new_x + obstacle.width() > grid_widget.width():
+    #     #     dx *= -1  # 水平方向反向
+    #     # if new_y < 0 or new_y + obstacle.height() > grid_widget.height():
+    #     #     dy *= -1  # 垂直方向反向
+    #     # 设置新位置
+    #     obstacle.move(new_x, new_y)
     # 打开地图文件
     def open_map(self):
         # 创建文件对话框
@@ -534,7 +662,13 @@ class PygameWidget(QWidget):
     def paintEvent(self, event):
 
         self.surface.fill(PygameWidget.BACK_COLOR)
+        # 更新动态障碍物位置
+        self.update_dynamic_obstacles()
+        # 绘制动态障碍物
+        self.draw_dynamic_obstacles()
+        #将多个表面叠加
         self.surface.blit(self.obs_surface, (0, 0))
+        self.surface.blit(self.dynamic_surface, (0, 0))
         self.surface.blit(self.point_surface, (0, 0))
         self.surface.blit(self.plan_surface, (0, 0))
         if self.grid:
@@ -737,6 +871,8 @@ class PygameWidget(QWidget):
         self.start_point = None  # 清除起点
         self.end_point = None  # 清除终点
         self.obstacles = []  # 清空障碍物列表
+        self.dynamic_obstacles=[]
+        self.dynamic_surface.fill(self.back_color)
         self.obs_surface.fill(self.back_color)
         self.plan_surface.fill(self.back_color)
         self.point_surface.fill(self.back_color)

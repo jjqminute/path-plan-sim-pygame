@@ -4,6 +4,7 @@ import random
 
 import numpy as np
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout
+from shapely import LineString
 from shapely.geometry import Point, Polygon
 import pygame
 from shapely.ops import nearest_points
@@ -21,10 +22,11 @@ class APFRRT():
         self.width = mapdata.width
         self.height = mapdata.height
         self.obstacles = mapdata.obstacles  # 多边形障碍物顶点
+        self.dynamic_obstacles=mapdata.dynamic_obstacles #动态障碍物
         # 全局障碍物信息
         self.obstacle = mapdata.obs_surface
         # APF参数
-        self.attraction_coeff = 5.0  # 吸引力系数
+        self.attraction_coeff = 50.0  # 吸引力系数
         self.repulsion_coeff = 5000.0  # 斥力系数
         self.repulsion_threshold = 60  # 斥力作用距离阈值
         # 检测震荡参数
@@ -309,22 +311,24 @@ class APFRRT():
             Returns:
             - collided: 如果发生碰撞，则为 True，否则为 False。
             """
-        vx, vy = self.normalize(dst[0] - src[0], dst[1] - src[1])
-        curr = list(src)
-        if curr[0] < 0 or curr[0] >= self.width or curr[1] < 0 or curr[1] >= self.height:
-            return True
-        while self.dist(curr, dst) > 1:
-            int_curr = int(curr[0]), int(curr[1])
-            if int_curr[0] < 0 or int_curr[0] >= self.width or int_curr[1] < 0 or int_curr[1] >= self.height:
+        # 创建检测线段
+        line = LineString([src, dst])
+
+        # 检查与静态障碍物的碰撞
+        for static_obstacle in self.obstacles:
+            static_polygon = Polygon(static_obstacle)
+            if line.intersects(static_polygon):
+                #print("静态障碍物碰撞！")
                 return True
-            if self.obstacle.get_at(int_curr) == (0, 0, 0):
-                self.history_size+=1
-                print(int_curr[0], int_curr[1])
-                print("障碍物！！！！！！！！！！！！")
-                self.repulsion_coeff+=50
+
+        # 检查与动态障碍物的碰撞
+        for dynamic_obstacle in self.dynamic_obstacles:
+            dynamic_polygon = Polygon(dynamic_obstacle.to_polygon())
+            if line.intersects(dynamic_polygon):
+                print("动态障碍物碰撞！")
                 return True
-            curr[0] += vx
-            curr[1] += vy
+
+        # 未发生碰撞
         return False
 
     def cubic_bezier(self, p0, p1, p2, p3, t):
@@ -340,7 +344,7 @@ class APFRRT():
         对给定路径应用三次贝塞尔曲线平滑。
         """
         if len(original_path) < 4:
-            raise ValueError("Path must contain at least 4 points for cubic bezier curve smoothing.")
+            return original_path
 
         smoothed_path = []
         # 将路径分为多个段，每四个点为一组来定义一个贝塞尔曲线
@@ -351,6 +355,26 @@ class APFRRT():
                 smoothed_path.append(bezier_point)
 
         return smoothed_path
+
+    def remove_redundant_points(self, path):
+        """
+        对路径进行去冗余优化，移除中间冗余点。
+        Args:
+        - path: 原始路径点列表 (list of Point)。
+        Returns:
+        - optimized_path: 去冗余后的路径点列表。
+        """
+        if len(path) < 3:  # 如果路径点少于3个，无法去冗余
+            return path
+
+        optimized_path = [path[0]]  # 保留起点
+        for i in range(1, len(path)):
+
+            if not self.collision((optimized_path[-1].x, optimized_path[-1].y), (path[i].x, path[i].y)):
+                continue
+            optimized_path.append(path[i])  # 如果路径被阻挡，则保留该点
+        optimized_path.append(path[-1])
+        return optimized_path
 
     def plan(self, plan_surface):
         """
@@ -395,39 +419,29 @@ class APFRRT():
                     current_node = current_node.father
 
                 path.append(self.start)  # 确保路径以起始点开始
-                path.reverse()
                 middtimer = time.time()
                 print("路径规划花费时间为")
                 print(middtimer - start)
                 print("总节点数为")
                 print(self.node_count)
-                smoothed_path = self.smooth_path_bezier(path, 100)
-                smoothed_path.append(self.end)
-                for k in smoothed_path:
-                    pygame.draw.circle(plan_surface, (255, 100, 255), (k.x, k.y), 2)
+                # 1. 去冗余优化
+                optimized_path = self.remove_redundant_points(path)
+                print("去冗余后的路径点数：", len(optimized_path))
+                #smoothed_path = self.smooth_path_bezier(optimized_path, 100)
+                #smoothed_path.append(self.end)
+                # 可视化平滑后的路径（用线连接点）
+                for k in range(len(optimized_path) - 1):
+                    pygame.draw.line(
+                        plan_surface,
+                        (255, 0, 0),  # 路径颜色
+                        (optimized_path[k].x, optimized_path[k].y),  # 当前点
+                        (optimized_path[k + 1].x, optimized_path[k + 1].y),  # 下一点
+                        2  # 线宽
+                    )
                 QApplication.processEvents()
-                # 如果达到目标，则构建并返回路径
-                # path = [new_node]
-                # current_node = new_node
-                # print(new_node)
-                #
-                # pygame.draw.circle(plan_surface, (0, 100, 255), (current_node.x, current_node.y), 2)
-                # pygame.draw.line(plan_surface, (255, 0, 0), (current_node.x, current_node.y),
-                #                  (self.end.x, self.end.y), 4)
-                # QApplication.processEvents()
-                #
-                # while current_node != self.start:
-                #     # 最终节点回溯整条路径
-                #     parent = current_node.father
-                #
-                #     pygame.draw.line(plan_surface, (255, 0, 0), (parent.x, parent.y),
-                #                      (current_node.x, current_node.y), 4)
-                #     QApplication.processEvents()
-                #
-                #     path.append(parent)
-                #     current_node = parent
-
                 path.reverse()
+
+                #path.reverse()
                 end = time.time()
                 print("总花费时间为")
                 print(end - start)

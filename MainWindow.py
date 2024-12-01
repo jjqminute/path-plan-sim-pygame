@@ -2,7 +2,7 @@ import re
 import threading
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import QWidget, QMainWindow, QMessageBox, QApplication, QFileDialog, QLineEdit, QLabel, QSlider, \
     QCheckBox, QButtonGroup, QRadioButton, QPushButton, QComboBox, QSpinBox, QVBoxLayout
 from AlgorithmList import AlgorithmList
@@ -13,6 +13,95 @@ from result import load_demo, Category_Demo, Category_Compare
 
 class Ui_MainWindow(object):
     windows = []  # 存储所有创建的窗口实例
+
+#动态障碍物窗口，用户选择生成位置，移动方向，
+    def DynamicObstaclesUI(self, MainWindow, grid_widget):
+        self.loginWindow_new = None
+        MainWindow.setObjectName("MainWindow")
+        MainWindow.setFixedSize(500, 300)  # 窗口大小锁定
+        # 障碍物形状
+        label_shape = QLabel("障碍物形状:", MainWindow)
+        label_shape.setGeometry(60, 30, 100, 30)
+        shape_group = QButtonGroup(MainWindow)
+        radio_circle = QRadioButton("圆形", MainWindow)
+        radio_circle.setGeometry(160, 30, 60, 30)
+        radio_square = QRadioButton("正方形", MainWindow)
+        radio_square.setGeometry(230, 30, 70, 30)
+
+        shape_group.addButton(radio_circle)
+        shape_group.addButton(radio_square)
+
+
+        # 障碍物运动方向
+        label_direction = QLabel("运动方向:", MainWindow)
+        label_direction.setGeometry(60, 80, 100, 30)
+        direction_group = QButtonGroup(MainWindow)
+        radio_up = QRadioButton("向上", MainWindow)
+        radio_up.setGeometry(160, 80, 60, 30)
+        radio_down = QRadioButton("向下", MainWindow)
+        radio_down.setGeometry(230, 80, 60, 30)
+        radio_left = QRadioButton("向左", MainWindow)
+        radio_left.setGeometry(300, 80, 60, 30)
+        radio_right = QRadioButton("向右", MainWindow)
+        radio_right.setGeometry(370, 80, 60, 30)
+        direction_group.addButton(radio_up)
+        direction_group.addButton(radio_down)
+        direction_group.addButton(radio_left)
+        direction_group.addButton(radio_right)
+
+        # 动态障碍物速度
+        label_speed = QLabel("运动速度:", MainWindow)
+        label_speed.setGeometry(60, 130, 100, 30)
+        slider_speed = QSlider(MainWindow)
+        slider_speed.setGeometry(160, 130, 200, 30)
+        slider_speed.setMinimum(1)
+        slider_speed.setMaximum(10)
+        slider_speed.setOrientation(Qt.Horizontal)
+        label_speed_value = QLabel("1", MainWindow)
+        label_speed_value.setGeometry(370, 130, 40, 30)
+        slider_speed.valueChanged.connect(lambda value: label_speed_value.setText(str(value)))
+
+        # 按钮：选择动态障碍物位置
+        button_select_position = QPushButton("选择动态障碍物位置", MainWindow)
+        button_select_position.setGeometry(180, 200, 150, 40)
+        button_select_position.clicked.connect(
+            lambda: self.select_obstacle_position(MainWindow, grid_widget, shape_group, direction_group, slider_speed))
+
+    def select_obstacle_position(self, settings_window, grid_widget, shape_group, direction_group, slider_speed):
+        # 隐藏设置窗口
+        settings_window.hide()
+
+        # 提示用户点击位置
+        label_notice = QLabel("点击网格选择动态障碍物位置", grid_widget)
+        label_notice.setGeometry(10, 10, 200, 30)
+        label_notice.setStyleSheet("color: blue")
+        label_notice.show()
+
+        # 鼠标点击事件绑定
+        def on_grid_click(event):
+            # 获取点击位置
+            x = event.pos().x()
+            y = event.pos().y()
+            label_notice.hide()
+            grid_widget.mousePressEvent = None  # 取消绑定事件
+
+            # 获取形状、方向、速度
+            shape_button = shape_group.checkedButton()
+            direction_button = direction_group.checkedButton()
+            speed = slider_speed.value()
+
+            if not shape_button or not direction_button:
+                QMessageBox.warning(grid_widget, "错误", "请设置障碍物的形状和运动方向")
+                return
+
+            shape = shape_button.text()
+            direction = direction_button.text()
+
+            # 创建动态障碍物
+            grid_widget.create_dynamic_obstacle( x, y, shape, direction, speed)
+
+        grid_widget.mousePressEvent = on_grid_click
+
 
     # 参数障碍物窗口 根据用户选择生成相同大小障碍物
     def modify_obstacles(self, MainWindow, grid_widget):
@@ -191,7 +280,7 @@ class Ui_MainWindow(object):
                 category.read_file(dialog.selectedFiles()[0])  # 获取选择的文件夹的路径
                 self.open_result_category(category)
         button_category.clicked.connect(on_category_click)
-        # 创建生成障碍物按钮
+        # 创建开始规划按钮
         self.button_start = QPushButton("开始规划", MainWindow)
         self.button_start.setGeometry(130, 250, 120, 30)  # 设置按钮位置和大小
 
@@ -778,6 +867,14 @@ class Ui_MainWindow(object):
         self.pushButton_ob.setGeometry(QtCore.QRect(730, 454, 80, 25))
         self.pushButton_ob.setObjectName("pushButton_ob")
         self.pushButton_ob.clicked.connect(self.open_modifyOb)
+        # 动态障碍物按钮
+        self.pushButton_dynamic_ob = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_dynamic_ob.setGeometry(QtCore.QRect(730, 454, 80, 25))  # 设置按钮的位置和大小
+        self.pushButton_dynamic_ob.setObjectName("pushButton_dynamic_ob")
+        self.pushButton_dynamic_ob.setText("动态障碍物")  # 设置按钮的文字
+        self.pushButton_dynamic_ob.clicked.connect(self.handle_dynamic_ob)  # 绑定点击事件
+        #self.pushButton_dynamic_ob.setStyleSheet("background-color: yellow;")  # 设置背景色以便观察
+        #self.pushButton_dynamic_ob.setVisible(True)  # 确保按钮可见
         # 下载地图模板
         self.actionArithmeticList = QtWidgets.QAction(MainWindow)
         self.actionArithmeticList.setObjectName("actionArithmeticList")
@@ -880,10 +977,27 @@ class Ui_MainWindow(object):
         self.sideToolBar.addWidget(self.pushButton_input_startAndEnd)
         self.sideToolBar.addWidget(self.pushButton_paint_rand)
         self.sideToolBar.addWidget(self.pushButton_ob)
+        self.sideToolBar.addWidget(self.pushButton_dynamic_ob)
+
         self.sideToolBar.addWidget(self.pushButton_5)
         self.sideToolBar.addWidget(self.pushButton_modify_map)
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+    def handle_dynamic_ob(self):
+        # 创建一个新的窗口
+        dynamic_ob_window = QtWidgets.QMainWindow()
+        ui.DynamicObstaclesUI(dynamic_ob_window, self.grid_widget)  # 专门处理动态障碍物的UI
+        # 设置窗口标题
+        dynamic_ob_window.setWindowTitle('动态障碍物')
+        # 初始化动态障碍物界面
+
+        #ui.setupUi(dynamic_ob_window, self.grid_widget)
+        # 显示新窗口
+        dynamic_ob_window.show()
+        # 将窗口实例保存到窗口列表中，避免被垃圾回收
+        self.windows.append(dynamic_ob_window)
+
     # 图形障碍物窗口
     def select_graph(self):
         new_window = QtWidgets.QMainWindow()
@@ -928,7 +1042,7 @@ class Ui_MainWindow(object):
         new_window.show()
         self.windows.append(new_window)  # 将新创建的窗口实例添加到列表中
 
-        # 打开参数障碍物窗口
+        # 打开规划算法窗口
     def open_start_path(self):
         new_window = QtWidgets.QMainWindow()
         ui.start_path(new_window, self.grid_widget)
@@ -1150,6 +1264,8 @@ class Ui_MainWindow(object):
     def openArithmeticList(self):
         self.algorithm_list = AlgorithmList()
         self.algorithm_list.show()
+
+
 
 
 if __name__ == '__main__':
