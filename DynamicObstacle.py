@@ -1,6 +1,8 @@
 # 动态障碍物数据结构
 import math
 
+from shapely import Point
+
 
 class DynamicObstacle:
     def __init__(self, shape, position, direction, speed, size):
@@ -17,6 +19,16 @@ class DynamicObstacle:
         self.speed = speed
         self.size = size
 
+    def predict_future_position(self, time_delta):
+        """根据速度和时间预测未来的位置"""
+        # 计算速度向量 (velocity)
+        velocity_x = self.direction[0] * self.speed
+        velocity_y = self.direction[1] * self.speed
+
+        # 计算未来位置
+        future_x = self.position[0] + velocity_x * time_delta
+        future_y = self.position[1] + velocity_y * time_delta
+        return Point(future_x, future_y)  # 返回预测的点
     def to_polygon(self):
         """
         将障碍物转换为多边形形式，便于碰撞检测。

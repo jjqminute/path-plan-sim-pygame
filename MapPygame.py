@@ -27,6 +27,7 @@ from scipy.interpolate import splprep, splev
 
 from DynamicObstacle import DynamicObstacle
 from arithmetic.APF.apf import apf
+from arithmetic.APFRRT.APFRRT_dyn import APFRRT_dyn
 from arithmetic.Astar.Map import Map
 from arithmetic.Astar.astar import astar
 from arithmetic.RRT.BiRRT import BiRrt
@@ -37,6 +38,7 @@ from result import Result_Demo
 
 from arithmetic.RRT.rrt import Rrt
 from arithmetic.APFRRT.APFRRT import APFRRT
+
 from arithmetic.PRM.prm import prm
 
 WHITE = (255, 255, 255)
@@ -306,7 +308,14 @@ class PygameWidget(QWidget):
         for point in self.result[:-1]:
             track.append((point.x, point.y))
         return track, time
-
+    def startApfRrt_dyn(self):
+        self.plan_surface.fill(self.back_color)
+        self.result = None
+        self.result, time = APFRRT_dyn(self).plan(self.plan_surface)
+        track = []
+        for point in self.result[:-1]:
+            track.append((point.x, point.y))
+        return track, time
     def startPRm(self):
         self.result = None
         self.result, time = prm(self).plan(self.plan_surface)
@@ -356,10 +365,29 @@ class PygameWidget(QWidget):
             end_point = Point(self.end_point)
             features.append(Feature(geometry=start_point, properties={"name": "起始点"}))
             features.append(Feature(geometry=end_point, properties={"name": "终点"}))
-
+        if self.dynamic_obstacles is not None:
+            for dynamic_obstacle in self.dynamic_obstacles:
+                shape=dynamic_obstacle.shape
+                position = dynamic_obstacle.position
+                direction = dynamic_obstacle.direction
+                speed = dynamic_obstacle.speed
+                size = dynamic_obstacle.size
+                # 创建动态障碍物的GeoJSON对象
+                dynamic_feature = geojson.Feature(
+                    geometry=geojson.Point(position),
+                    properties={
+                        "type": "dynamic_obstacle",
+                        "name": "动态障碍物",
+                        "shape":shape,
+                        "direction": direction,
+                        "speed": speed,
+                        "size": size
+                    }
+                )
+                features.append(dynamic_feature)
         feature_collection = FeatureCollection(features)
         # 先封装经过计算再存入结果文件
-        r = Result_Demo(self.start_point, self.end_point, time1, self.obstacles, track)
+        r = Result_Demo(self.start_point, self.end_point, time1, self.obstacles, self.dynamic_obstacles,track)
         js2 = json.loads(str(feature_collection))
         js = dict(time=time1, track=track, smoothness=r.smoothness, pathlen=r.pathlen)  # 加入r中计算的数据到结果类中
         js2.update(js)
@@ -407,6 +435,27 @@ class PygameWidget(QWidget):
             features.append(Feature(geometry=start_point, properties={"name": "起始点"}))
             features.append(Feature(geometry=end_point, properties={"name": "终点"}))
 
+            # 处理动态障碍物
+        if self.dynamic_obstacles is not None:
+            for dynamic_obstacle in self.dynamic_obstacles:
+                shape=dynamic_obstacle.shape
+                position = dynamic_obstacle.position
+                direction = dynamic_obstacle.direction
+                speed = dynamic_obstacle.speed
+                size = dynamic_obstacle.size
+                # 创建动态障碍物的GeoJSON对象
+                dynamic_feature = geojson.Feature(
+                    geometry=geojson.Point(position),
+                    properties={
+                        "type": "dynamic_obstacle",
+                        "name": "动态障碍物",
+                        "shape":shape,
+                        "direction": direction,
+                        "speed": speed,
+                        "size": size
+                    }
+                )
+                features.append(dynamic_feature)
         feature_collection = FeatureCollection(features)
 
         # 将FeatureCollection保存为GeoJSON格式的字符串
@@ -553,6 +602,7 @@ class PygameWidget(QWidget):
         # # 清空地图后，重新设置地图分辨率
         # self.modifyMap(int(self.cell_size))
         obstacles = []
+        dynamic_obstacles = []
         for feature in geojson_obj['features']:
             geometry = feature['geometry']
             properties = feature['properties']
@@ -563,9 +613,19 @@ class PygameWidget(QWidget):
                 self.end_point = geometry['coordinates']
             elif geometry['type'] == 'Polygon':
                 obstacles.append(tuple(geometry['coordinates'][0]))
+                # 处理动态障碍物
+            elif geometry['type'] == 'Point' and properties.get('type') == "dynamic_obstacle":
+                shape = properties.get('shape', '正方形')
+                position = tuple(geometry['coordinates'])
+                direction = tuple(properties.get('direction', (1, 0)))  # 默认方向为 (1, 0)
+                speed = properties.get('speed', 1.0)  # 默认速度为 1.0
+                size = properties.get('size', 20.0)  # 默认大小为 5.0
+
+                dynamic_obstacle = DynamicObstacle(shape, position, direction, speed, size)
+                dynamic_obstacles.append(dynamic_obstacle)
 
         self.obstacles = obstacles
-
+        self.dynamic_obstacles = dynamic_obstacles
         # print(obstacles)
 
         self.obs_surface.fill(self.back_color)
@@ -579,36 +639,7 @@ class PygameWidget(QWidget):
         if self.end_point:
             pygame.draw.circle(self.obs_surface, (255, 0, 0), self.end_point, self.obs_radius)
 
-        # screen = pygame.Surface((self.width, self.height))
-        #
-        # # 设置颜色
-        # WHITE = (255, 255, 255)
-        #
-        # # 设置背景颜色
-        # screen.fill(WHITE)
-        #
-        # # 绘制障碍物
-        # for obstacle in self.obstacles:
-        #     pygame.draw.rect(screen, (0, 0, 0), (obstacle[0], obstacle[1], self.cell_size, self.cell_size), 0)
-        #
-        # # 绘制起始点和终点
-        # if self.start_point:
-        #     pygame.draw.rect(screen, (0, 255, 0),
-        #                      (self.start_point[0], self.start_point[1], self.cell_size, self.cell_size), 0)
-        # if self.end_point:
-        #     pygame.draw.rect(screen, (255, 0, 0),
-        #                      (self.end_point[0], self.end_point[1], self.cell_size, self.cell_size), 0)
-        #
-        # # 将pygame surface转换为QImage
-        # image = QImage(screen.get_buffer(), self.width, self.height, QImage.Format_RGB32)
-        #
-        # # 将QImage转换为QPixmap
-        # pixmap = QPixmap.fromImage(image)
-        #
-        # # 使用QPainter绘制pixmap
-        # painter = QPainter(self)
-        # painter.drawPixmap(0, 0, pixmap)
-        # painter.end()
+
 
     # 鼠标点击事件处理
     def mousePressEvent(self, event):

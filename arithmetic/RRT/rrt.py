@@ -142,7 +142,6 @@ class Rrt:
             Args:
             - src: 源点的坐标 (x1, y1)。
             - dst: 目标点的坐标 (x2, y2)。
-            - obstacles: 障碍物表面（如 pygame surface）。
 
             Returns:
             - collided: 如果发生碰撞，则为 True，否则为 False。

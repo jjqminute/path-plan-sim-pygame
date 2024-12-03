@@ -12,6 +12,10 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from shapely import Polygon, Point
 
 import re
+
+from DynamicObstacle import DynamicObstacle
+
+
 def load_demo(file_name):
     """
     加载result_demo(路径规划问题结果类)
@@ -28,6 +32,7 @@ def load_demo(file_name):
         print(f"Error loading GeoJSON: {e}")
         return None  # 或者根据需要进行其他错误处理
     obstacles = []
+    dynamic_obstacles = []
     for feature in geojson_obj['features']:
         geometry = feature['geometry']
         properties = feature['properties']
@@ -37,11 +42,21 @@ def load_demo(file_name):
             end_point = geometry['coordinates']
         elif geometry['type'] == 'Polygon':
             obstacles.append(Polygon(geometry['coordinates'][0]))
+        elif geometry['type'] == 'Point' and properties.get('type') == "dynamic_obstacle":
+            shape = properties.get('shape', '正方形')
+            position = tuple(geometry['coordinates'])
+            direction = tuple(properties.get('direction', (1, 0)))  # 默认方向为 (1, 0)
+            speed = properties.get('speed', 1.0)  # 默认速度为 1.0
+            size = properties.get('size', 20.0)  # 默认大小为 5.0
+
+            dynamic_obstacle = DynamicObstacle(shape, position, direction, speed, size)
+            dynamic_obstacles.append(dynamic_obstacle)
     time = geojson_obj['time']
     track = geojson_obj['track']
     smoothness = geojson_obj['smoothness']
     pathlen = geojson_obj['pathlen']
-    return Result_Demo(start=start_point, end=end_point, time=time, obstacles=obstacles, track=track,
+    return Result_Demo(start=start_point, end=end_point, time=time, obstacles=obstacles,
+                       dynamic_obstacles=dynamic_obstacles, track=track,
                        smoothness=smoothness, pathlen=pathlen)
 
 
@@ -50,7 +65,7 @@ class Result_Demo:
     路径规划结果类
     """
 
-    def __init__(self, start, end, time, obstacles, track, smoothness=None, pathlen=0):
+    def __init__(self, start, end, time, obstacles, dynamic_obstacles, track, smoothness=None, pathlen=0):
         """
         路径规划的结果分析类
         :param start: 起点 [x,y]
@@ -65,6 +80,7 @@ class Result_Demo:
         self.end = end
         self.time = time
         self.obstacles = obstacles
+        self.dynamic_obstacles = dynamic_obstacles
         self.track = track
         self.smoothness = smoothness
         if smoothness is None:
@@ -96,6 +112,25 @@ class Result_Demo:
             x, y = polygon.exterior.xy
             plt.plot(x, y, color='black')
             plt.fill(x, y, alpha=1, color='black')
+        # 绘制动态障碍物
+        for dynamic_obstacle in self.dynamic_obstacles:
+            # 获取动态障碍物的多边形形状
+            polygon = Polygon(dynamic_obstacle.to_polygon())
+            x, y = polygon.exterior.xy
+            plt.plot(x, y, color='red')  # 红色轮廓线
+            plt.fill(x, y, alpha=1, color='red')  # 半透明红色填充
+
+            # 绘制运动方向箭头
+            position = dynamic_obstacle.position
+            direction = dynamic_obstacle.direction
+            arrow_scale = dynamic_obstacle.size*2   # 箭头的缩放因子
+            plt.arrow(
+                position[0], position[1],  # 箭头起点
+                direction[0] * arrow_scale, direction[1] * arrow_scale,  # 箭头方向和长度
+                head_width=0.3 * arrow_scale, head_length=0.5 * arrow_scale, fc='red', ec='red'
+            )
+
+
 
     def draw_track(self):
         """
@@ -122,7 +157,7 @@ class Result_Demo:
         curvature = np.abs(slopes) / np.sqrt(1 + slopes ** 2)
         return curvature
 
-    def compute_linearity(self,x, y):
+    def compute_linearity(self, x, y):
         # 计算起点到终点的直线距离
         start_point = np.array([x[0], y[0]])
         end_point = np.array([x[-1], y[-1]])
@@ -138,6 +173,7 @@ class Result_Demo:
         smoothness = 1 - linearity
 
         return smoothness
+
     def compute_smoothness(self):
         """计算路径平滑度"""
         path_x = [x for (x, y) in self.track]
@@ -148,6 +184,7 @@ class Result_Demo:
         # 计算平均曲率作为路径平滑度的指标
         average_curvature = np.mean(curvature)
         self.smoothness = round(average_curvature, 2)
+
     def draw_curvature(self):
         # 绘制曲率
         figure = plt.figure()
@@ -183,6 +220,7 @@ class Category_Demo:
     画图:1)路径比较2)平滑度比较
     数据：1)计算平滑度2)计算平均路径长度3)平均用时
     """
+
     def __init__(self):
         """
         初始化
@@ -297,7 +335,7 @@ class Category_Demo:
         result_count = len(self.results)
         for r in self.results:
             total_smoothness += r.smoothness
-        self.ave_smooth = total_smoothness/result_count
+        self.ave_smooth = total_smoothness / result_count
 
     def calculate_average_length(self):
         """
